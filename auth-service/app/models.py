@@ -21,19 +21,19 @@ async def add_user(username: str, email: str, password_hash: str):
         try:
             await session.commit()
             print(f"User {new_user} was added")
-            return 1
+            return new_user.id
         except IntegrityError:
             await session.rollback()
             print("Error: user is in base")
             return 0
 
-async def get_user_by_id(user_id: int) -> Optional[str]:
+async def get_user_by_id(user_id: int) -> Optional[User]:
     async with new_session() as session:
         user = await session.get(User, user_id)
         return user
 
 
-async def get_user_by_username(username: str) -> Optional[str]:
+async def get_user_by_username(username: str) -> Optional[User]:
     async with new_session() as session:
         result = await session.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()

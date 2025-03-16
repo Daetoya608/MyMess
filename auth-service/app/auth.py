@@ -25,4 +25,3 @@ def decode_jwt(token: str):
         return payload
     except JWTError:
         return None
-
