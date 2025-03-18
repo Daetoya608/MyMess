@@ -4,7 +4,7 @@ from database import create_tables
 
 app = FastAPI(title="Auth Service")
 
-app.include_router(router, prefix="/auth", tags=["Auth"])
+app.include_router(router, prefix="/auth-service", tags=["Auth"])
 
 @app.on_event("startup")
 async def startup():
