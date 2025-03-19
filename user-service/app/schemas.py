@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class UserBase(BaseModel):
     username: str = Field(...)
@@ -19,5 +19,4 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     id: int
 
-    class Config:
-        from_attributes = True  # Позволяет Pydantic работать с ORM-моделями
+    config = ConfigDict(from_attributes=True)
