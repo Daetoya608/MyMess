@@ -16,7 +16,7 @@ class UserUpdate(BaseModel):
     info_about_yourself: str | None = None
 
 
-class UserResponse(UserBase):
-    id: int
-
-    config = ConfigDict(from_attributes=True)
+# class UserResponse(UserBase):
+#     id: int
+#
+#     config = ConfigDict(from_attributes=True)

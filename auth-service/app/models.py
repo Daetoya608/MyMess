@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
@@ -14,12 +12,11 @@ class User(Base):
     password_hash = Column(String)
 
 
-async def add_user(username: str, email: str, password_hash: str):
+async def add_user(username: str, email: str, password_hash: str) -> int | Column[int]:
     async with new_session() as session:
         new_user = User(username=username, email=email, password_hash=password_hash)
         session.add(new_user)
         try:
-            print("AUTH-models1-HERE")
             await session.commit()
             print(f"User {new_user} was added")
             return new_user.id
@@ -28,19 +25,19 @@ async def add_user(username: str, email: str, password_hash: str):
             print("Error: user is in base")
             return 0
 
-async def get_user_by_id(user_id: int):
+async def get_user_by_id(user_id: int) -> User | None:
     async with new_session() as session:
         user = await session.get(User, user_id)
         return user
 
 
-async def get_user_by_username(username: str):
+async def get_user_by_username(username: str) -> User | None:
     async with new_session() as session:
         result = await session.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
 
 
-async def delete_user_by_id(id: int):
+async def delete_user_by_id(id: int | Column[int]) -> int:
     finded_user = await get_user_by_id(id)
     if finded_user is None:
         print("User is not in base")
@@ -56,7 +53,7 @@ async def delete_user_by_id(id: int):
             print("Error: cant delete user")
             return 0
 
-async def delete_user_by_username(username: str):
+async def delete_user_by_username(username: str) -> int:
     finded_user = await get_user_by_username(username)
     if finded_user is None:
         print("User is not in base")

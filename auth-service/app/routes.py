@@ -27,6 +27,8 @@ async def register(user: UserCreate):
     response = await create_user_in_user_service(
         user.username, user.nickname, user.email
     )
+    # !!!!!!!!!!!!!!! ДОБАВИТЬ  ПРОВЕРКУ СОВПАДЕНИЯ ID
+
     if not (200 <= response.status_code < 300):
         status = await delete_user_by_username(user.username)
         return JSONResponse(status_code=500, content={"status": status})
