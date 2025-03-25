@@ -89,3 +89,20 @@ async def get_chat_by_id(chat_id: int) -> Chat | None:
     async with new_session() as session:
         chat = await session.get(Chat, chat_id)
         return chat
+
+
+async def add_content_and_message(message_data: dict):
+    try:
+        content_id = await add_content(message_data["content"]["text_content"])
+        if content_id == 0:
+            return None
+        message_id = await add_message(
+            sender_id=message_data["sender_id"],
+            receiver_id=message_data["receiver_id"],
+            content_id=content_id
+        )
+        if message_id == 0:
+            return None
+        return message_id
+    except KeyError:
+        return None

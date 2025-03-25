@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, UTC
 
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -15,7 +15,7 @@ def check_hash_and_password(input_password: str, password_hash: str) -> bool:
 
 def create_jwt(payload: dict, lifetime: timedelta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
     data = payload.copy()
-    expire = datetime.utcnow() + lifetime
+    expire = datetime.now(UTC) + lifetime
     data.update({"exp": expire})
     return jwt.encode(claims=data, key=SECRET_KEY, algorithm=ALGORITHM)
 
@@ -26,3 +26,11 @@ def decode_jwt(token: str):
     except JWTError:
         return None
 
+
+# print(create_jwt(
+#     payload={
+#         "id": 5,
+#         "username": "forexample"
+#     }
+# ))
+print(decode_jwt("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwidXNlcm5hbWUiOiJmb3JleGFtcGxlIiwiZXhwIjoxNzQyOTIzNjQ4fQ.lHps8RkhvzeGpaTAtRO3uoyFanR0kfFAngG50gPf-Ig"))

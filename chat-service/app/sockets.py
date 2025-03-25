@@ -1,9 +1,12 @@
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, WebSocket, FastAPI
 import asyncio
 import hashlib
 from connection_manager import manager
+from data_transform import get_token_data_from_websocket
 
-socket_router = APIRouter()
+# socket_router = APIRouter()
+
+app = FastAPI()
 
 # Функция для вычисления SHA-256 хеша файла
 def calculate_file_hash(filename):
@@ -14,13 +17,20 @@ def calculate_file_hash(filename):
     return sha256.hexdigest()
 
 
+@app.websocket("/ws")
+async def send_message(websocket: WebSocket):
+    token_data = get_token_data_from_websocket(websocket)
+    if token_data is None:
+        print("invalid token")
+        await websocket.close()
+        return
+    user_id = token_data["id"]
+    await manager.connect(websocket)
+    await manager.try_get_message_task(websocket)
+    # send_task = asyncio.create_task(manager.try_send_message_task(websocket, user_id))
+    # get_task = asyncio.create_task(manager.try_get_message_task(websocket))
 
-# @socket_router.websocket("/ws")
-# async def send_message(websocket: WebSocket):
-#     await manager.connect(websocket)
-#     try:
-#         while True:
-
+    # await asyncio.gather(send_task, get_task)
 
 
 

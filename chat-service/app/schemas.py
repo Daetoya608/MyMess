@@ -6,8 +6,8 @@ class ContentBase(BaseModel):
 class ContentCreate(ContentBase):
     pass
 
-# class ContentResponse(ContentBase):
-#     config = ConfigDict(from_attributes=True)
+class ContentResponse(ContentBase):
+    model_config = { "from_attributes": True }
 
 
 class MessageBase(BaseModel):
@@ -20,8 +20,7 @@ class MessageCreate(MessageBase):
     pass
 
 class MessageResponse(MessageBase):
-    config = ConfigDict(from_attributes=True)
-
+    model_config = { "from_attributes": True }
 
 class SendRequest(BaseModel):
     token: str

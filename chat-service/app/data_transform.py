@@ -22,3 +22,6 @@ def get_username_from_websocket(data_from_websocket: dict):
 
 def get_token_from_websocket(data_from_websocket: dict):
     return data_from_websocket["token"]
+
+def get_message_from_token(token: str):
+    return decode_jwt(token)

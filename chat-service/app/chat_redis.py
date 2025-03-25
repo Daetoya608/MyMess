@@ -5,10 +5,10 @@ from schemas import MessageBase
 redis_client = aioredis.Redis(host='localhost', port=6379, db=0)
 
 
-async def store_message(user_id: int, message: MessageBase):
+async def store_message(user_id: int, message_json: str):
     """Сохраняет сообщение для пользователя в Redis."""
     key = f"messages:{user_id}"
-    await redis_client.rpush(key, message.model_dump_json())  # Сохраняем как JSON-строку
+    await redis_client.rpush(key, message_json)  # Сохраняем как JSON-строку
 
 
 async def get_all_user_messages(user_id):
@@ -27,7 +27,7 @@ async def delete_all_user_messages(user_id):
 async def get_part_user_messages(user_id: int, limit: int = 20):
     key = f"messages:{user_id}"
     messages = await redis_client.lrange(key, 0, limit - 1)
-    return [json.loads(msg.decode()) for msg in messages]
+    return {i: json.loads(msg.decode()) for i, msg in enumerate(messages)}
 
 
 async def delete_part_user_messages(user_id: int, limit: int = 20):
