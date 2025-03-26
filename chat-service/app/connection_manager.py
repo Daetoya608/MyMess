@@ -28,6 +28,7 @@ async def send_json_message(websocket: WebSocket, json_data: str) -> bool:
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, WebSocket] = {}
+        self.receive_flags: Dict[int, bool]
 
     async def connect(self, websocket: WebSocket):
         user_data = get_token_data_from_websocket(websocket)
@@ -97,7 +98,14 @@ class ConnectionManager:
         except WebSocketDisconnect:
             await self.disconnect(websocket)
 
+    # async def confirm(self, websocket: WebSocket):
 
+
+    async def receive_data(self, websocket: WebSocket, queue: asyncio.Queue):
+        data: dict = await websocket.receive_json()
+        if data and (data["type"] in ("message", "received")):
+            return data
+        return None
 
 
 
