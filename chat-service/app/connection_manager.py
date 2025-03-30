@@ -5,7 +5,7 @@ from fastapi import WebSocket, WebSocketDisconnect, APIRouter, WebSocketExceptio
 from chat import decode_jwt
 from data_transform import get_token_data_from_websocket, get_message_from_token
 from schemas import MessageBase
-from models import add_content_and_message
+from models import add_message
 from chat_redis import (
     get_part_user_messages,
     delete_part_user_messages,
@@ -28,7 +28,8 @@ async def send_json_message(websocket: WebSocket, json_data: str) -> bool:
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, WebSocket] = {}
-        self.receive_flags: Dict[int, bool]
+        self.accept_queue = asyncio.Queue()
+        self.messages_queue = asyncio.Queue()
 
     async def connect(self, websocket: WebSocket):
         user_data = get_token_data_from_websocket(websocket)
@@ -46,14 +47,14 @@ class ConnectionManager:
             return
         self.active_connections.pop(user_data["id"], "websocket not in base")
 
-    # возвращаем False, если нет новых сообщений
+    # возвращаем False, если не получилось отправить
     async def send_new_messages_for_user(self, websocket: WebSocket, user_id: int) -> bool:
         messages_part = await get_part_user_messages(user_id)           # получаем первые n(=20) сообщений из redis
         if len(messages_part) == 0:
-            return False
+            return True
         is_send = await send_json_message(websocket, messages_part)        # отправляем сообщение, получаем подтверждение
         if not is_send:    # если не доставлено заканчиваем
-            return True
+            return False
         await delete_part_user_messages(user_id)            # удаляем из redis
         return True
 
