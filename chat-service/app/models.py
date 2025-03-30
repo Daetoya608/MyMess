@@ -16,6 +16,7 @@ class Chat(Base):
     messages = relationship("Message", back_populates="chat")
 
 
+
 class Content(Base):
     __tablename__ = "content"
 
