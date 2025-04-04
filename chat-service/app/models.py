@@ -82,6 +82,13 @@ async def add_message(sender_id: int, chat_id: int, content_text: str):
             return None
 
 
+async def add_message_by_obj(data: dict):
+    await add_message(
+        sender_id=data["sender_id"],
+        chat_id=data["chat_id"],
+        content_text=data["content_text"]
+    )
+
 # async def get_content_by_id(content_id: int) -> Content | None:
 #     async with new_session() as session:
 #         content = await session.get(Content, content_id)
