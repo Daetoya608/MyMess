@@ -5,7 +5,7 @@ import time
 
 async def websocket_client():
     uri = "ws://localhost:8000/ws"  # адрес твоего сервера
-    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwidXNlcm5hbWUiOiJmb3JleGFtcGxlIiwiZXhwIjoxNzQzODUyNzU2fQ.V-JtzN1BBGmffRDS049I-mEWNIKT4AxtI-leGPa5LDw"
+    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwidXNlcm5hbWUiOiJmb3JleGFtcGxlIiwiZXhwIjoxNzQzODc2ODkxfQ.AY7O8xiQ_mbP4wOksQJZAvs90d4lOVjHjZTA6Z0kyiE"
     async with websockets.connect(uri, additional_headers={"token": token}) as websocket:
         # Пример данных
         request_data = {
