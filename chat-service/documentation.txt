@@ -92,7 +92,7 @@
     "time_key": int      (time.perf_counter_ns())
     "messages": [
         {
-            "id": int
+            "id": int,          # только сервер->клиент
             "sender_id": int,
             "chat_id": int,
             "content_text": str

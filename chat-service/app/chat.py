@@ -27,10 +27,10 @@ def decode_jwt(token: str):
         return None
 
 
-# print(create_jwt(
-#     payload={
-#         "id": 5,
-#         "username": "forexample"
-#     }
-# ))
-print(decode_jwt("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwidXNlcm5hbWUiOiJmb3JleGFtcGxlIiwiZXhwIjoxNzQyOTIzNjQ4fQ.lHps8RkhvzeGpaTAtRO3uoyFanR0kfFAngG50gPf-Ig"))
+print(create_jwt(
+    payload={
+        "id": 5,
+        "username": "forexample"
+    }
+))
+print(decode_jwt("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwidXNlcm5hbWUiOiJmb3JleGFtcGxlIiwiZXhwIjoxNzQzODAyMjIyfQ.QlyFkcIwBVM0glSFhgP-HOZZrfK7kbL-b8DOPjKGik0"))

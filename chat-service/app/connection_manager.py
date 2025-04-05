@@ -2,6 +2,7 @@ import json
 import asyncio
 import time
 from typing import Annotated, Dict
+from fastapi.websockets import WebSocketState
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter, WebSocketException
 from chat import decode_jwt
 from data_transform import get_token_data_from_websocket, get_message_from_token
@@ -14,23 +15,23 @@ from chat_redis import (
 )
 
 
-async def send_json_message(websocket: WebSocket, json_data: str) -> bool:
-    await websocket.send_json(json_data)  # отправляем данные клиенту
-    try:
-        ack = await asyncio.wait_for(websocket.receive_text(), timeout=5)
-        if ack == "received":
-            print("Сообщения доставлены")
-            return True
-    except asyncio.TimeoutError:
-        print("Клиент не подтвердил получение")
-    return False
-
-
-async def send_receive(websocket: WebSocket):
-    answer = {
-        "type": "received"
-    }
-    await websocket.send_json(json.dumps(answer))
+# async def send_json_message(websocket: WebSocket, json_data: str) -> bool:
+#     await websocket.send_json(json_data)  # отправляем данные клиенту
+#     try:
+#         ack = await asyncio.wait_for(websocket.receive_text(), timeout=5)
+#         if ack == "received":
+#             print("Сообщения доставлены")
+#             return True
+#     except asyncio.TimeoutError:
+#         print("Клиент не подтвердил получение")
+#     return False
+#
+#
+# async def send_receive(websocket: WebSocket):
+#     answer = {
+#         "type": "received"
+#     }
+#     await websocket.send_json(json.dumps(answer))
 
 def default_answer(time_key):
     answer: dict = {
@@ -72,57 +73,104 @@ class ConnectionManager:
                 return
 
     async def receive_requests(self):
-        request_data: dict = await self.websocket.receive_json()
-        if request_data.get("type") == "messages":
-            await self.messages_queue.put(request_data)
-            await self.send_data(default_answer(request_data.get("time_key")))
-        elif request_data.get("type") == "ack":
-            await self.ack_queue.put(request_data)
-        else:
-            print("Неверная структура запроса")
+        try:
+            if self.websocket.client_state != WebSocketState.CONNECTED:
+                raise WebSocketDisconnect
+            print("Ждем данных от клиента")
+            request_data: dict = await self.websocket.receive_json()
+            # request_data: dict = await asyncio.wait_for(self.websocket.receive_json(), timeout=3)
+            print("!!!!!!!!!!" + str(type(request_data)))
+            print(f"Данные от клиента {type(request_data)}: {request_data}")
+            if request_data.get("type") == "messages":
+                print("TYPE == MESSAGES")
+                await self.messages_queue.put(request_data)
+                print("send data here")
+                await self.send_data(default_answer(request_data.get("time_key")))
+            elif request_data.get("type") == "ack":
+                await self.ack_queue.put(request_data)
+            else:
+                print("Неверная структура запроса")
+        except asyncio.TimeoutError:
+            print("Ошибка: долгое ожидание")
+
+    async def receive_requests_task(self):
+        while True:
+            try:
+                print("receive_requests_task-1")
+                await self.receive_requests()
+            except WebSocketDisconnect:
+                await self.disconnect()
+                print("receive_requests_task-97")
+                # break
+                return False
+            except Exception as e:
+                print(f"Ошибка: {e}")
+                await self.disconnect()
+                # break
+                return False
+            finally:
+                await self.disconnect()
+
+
 
     async def get_messages(self):
         try:
-            requests_data = await asyncio.wait_for(self.messages_queue.get(), timeout=10)
-            messages = requests_data["messages"]
+            # requests_data = await asyncio.wait_for(self.messages_queue.get(), timeout=10)
+            requests_data = await self.messages_queue.get()
+            print(f"!!!!!! requests_data = {requests_data}")
+            messages = requests_data.get("messages")
+            if messages is None:
+                print("Ошибка: get_messages -> messages == None")
             for message in messages:
                 chat_id = message["chat_id"]
-                await store_message(chat_id, message)
-                await add_message_by_obj(message)
-        except TimeoutError:
+                print(f"сохранено {message}")
+                await store_message(chat_id, json.dumps(message))
+                #await add_message_by_obj(message)
+        except asyncio.TimeoutError:
+            print("timeout error")
             return
 
     async def get_messages_task(self):
-        try:
-            while True:
-                await self.get_messages()
-        except WebSocketDisconnect:
-            await self.disconnect()
-
-
-    # возвращаем False, если не получилось отправить
-    async def send_new_messages_for_user(self, websocket: WebSocket, user_id: int) -> bool:
-        messages_part = await get_part_chat_messages(user_id)           # получаем первые n(=20) сообщений из redis
-        if len(messages_part) == 0:
-            return True
-        is_send = await send_json_message(websocket, messages_part)        # отправляем сообщение, получаем подтверждение
-        if not is_send:    # если не доставлено заканчиваем
-            return False
-        await delete_part_chat_messages(user_id)            # удаляем из redis
-        return True
-
-    async def send_messages_task(self, websocket: WebSocket, user_id: int):
+        print("enter get_messages_task")
         while True:
-            is_send = await self.send_new_messages_for_user(websocket, user_id)
-            if not is_send:
-                await asyncio.sleep(0.1)
+            print("get_message_task-117")
+            try:
+                await self.get_messages()
+            except WebSocketDisconnect:
+                print("get_messages_task-121")
+                await self.disconnect()
                 break
+            except Exception as e:
+                print(f"Error get_messages_task: {e}")
+                await self.disconnect()
+                break
+            finally:
+                await self.disconnect()
 
-    async def try_send_message_task(self, websocket: WebSocket, user_id: int):
-        try:
-            await self.send_messages_task(websocket, user_id)
-        except WebSocketDisconnect:
-            await self.disconnect(websocket)
+
+    # # возвращаем False, если не получилось отправить
+    # async def send_new_messages_for_user(self, websocket: WebSocket, user_id: int) -> bool:
+    #     messages_part = await get_part_chat_messages(user_id)           # получаем первые n(=20) сообщений из redis
+    #     if len(messages_part) == 0:
+    #         return True
+    #     is_send = await send_json_message(websocket, messages_part)        # отправляем сообщение, получаем подтверждение
+    #     if not is_send:    # если не доставлено заканчиваем
+    #         return False
+    #     await delete_part_chat_messages(user_id)            # удаляем из redis
+    #     return True
+    #
+    # async def send_messages_task(self, websocket: WebSocket, user_id: int):
+    #     while True:
+    #         is_send = await self.send_new_messages_for_user(websocket, user_id)
+    #         if not is_send:
+    #             await asyncio.sleep(0.1)
+    #             break
+    #
+    # async def try_send_message_task(self, websocket: WebSocket, user_id: int):
+    #     try:
+    #         await self.send_messages_task(websocket, user_id)
+    #     except WebSocketDisconnect:
+    #         await self.disconnect(websocket)
 
     # получение и сохранение данных в базу
     # async def get_message(self, websocket: WebSocket):
@@ -164,28 +212,47 @@ class GlobalConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, ConnectionManager] = {}
         self.to_delete_queue: asyncio.Queue = asyncio.Queue()
+        self.to_activate_connection: asyncio.Queue = asyncio.Queue()
 
     async def new_connection(self, websocket: WebSocket):
         user_data = get_token_data_from_websocket(websocket)
         if user_data is None:
             await websocket.close()
-            return
+            return None
         await websocket.accept()
-        self.active_connections[user_data["id"]] = ConnectionManager(websocket, self.to_delete_queue)
+        connection_manager = ConnectionManager(user_data["id"], websocket, self.to_delete_queue)
+        self.active_connections[user_data["id"]] = connection_manager
+        await self.to_activate_connection.put(connection_manager)
+        print(f"connection_manager: {connection_manager.user_id}")
+        return connection_manager
 
     async def delete_disconnected(self):
         while True:
             try:
                 disconnected_user: ConnectionManager = await asyncio.wait_for(self.to_delete_queue.get(), timeout=1)
                 del self.active_connections[disconnected_user.user_id]
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 continue
 
-    async def 
+    async def start_task(self):
+        while True:
+            try:
+                connection_manager: ConnectionManager = await asyncio.wait_for(
+                    self.to_activate_connection.get(),
+                    timeout=1
+                )
+                # asyncio.create_task(connection_manager.receive_requests_task())
+                # asyncio.create_task(connection_manager.get_messages_task())
+            except WebSocketDisconnect:
+                print("start_task_225")
+                break
+            except asyncio.TimeoutError:
+                continue
 
 
-manager = GlobalConnectionManager()
 
-
+global_connection_manager = GlobalConnectionManager()
+# task1 = asyncio.create_task(global_connection_manager.start_task())
+task2 = asyncio.create_task(global_connection_manager.delete_disconnected())
 
 
