@@ -1,7 +1,8 @@
 import json
 import asyncio
 import time
-from typing import Annotated, Dict
+import math
+from typing import Annotated, Dict, List
 from fastapi.websockets import WebSocketState
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter, WebSocketException
 from chat import decode_jwt
@@ -11,7 +12,8 @@ from models import add_message, add_message_by_obj
 from chat_redis import (
     get_part_chat_messages,
     delete_part_chat_messages,
-    store_message
+    store_message,
+    get_all_messages_for_user_id
 )
 
 
@@ -41,6 +43,20 @@ def default_answer(time_key):
     return answer
 
 
+def default_sending_messages(messages: List[Dict]):
+    result: dict = {
+        "type": "messages",
+        "messages": messages
+    }
+    return result
+
+
+def split_messages(messages: List[Dict], num_split: int = 20):
+    begin_list = lambda x: num_split * x
+    end_list = lambda x: x if x < len(messages) else len(messages)
+    return [messages[begin_list(i):end_list(i + 1)] for i in range(math.ceil(len(messages)/num_split))]
+
+
 class ConnectionManager:
     def __init__(self,user_id: int, websocket: WebSocket, to_delete_queue: asyncio.Queue):
         self.user_id = user_id
@@ -60,6 +76,7 @@ class ConnectionManager:
             ack = await asyncio.wait_for(self.ack_queue.get(), timeout=timeout)
             if ack["time_key"] == time_key:
                 return True
+            await self.ack_queue.put(ack)
             return False
         except asyncio.TimeoutError:
             return False
@@ -70,7 +87,8 @@ class ConnectionManager:
         for _ in range(max_try_count):
             await self.send_data(messages_data)
             if await self.receive_expectation(messages_data["time_key"]):
-                return
+                return True
+        return False
 
     async def receive_requests(self):
         try:
@@ -79,7 +97,6 @@ class ConnectionManager:
             print("Ждем данных от клиента")
             request_data: dict = await self.websocket.receive_json()
             # request_data: dict = await asyncio.wait_for(self.websocket.receive_json(), timeout=3)
-            print("!!!!!!!!!!" + str(type(request_data)))
             print(f"Данные от клиента {type(request_data)}: {request_data}")
             if request_data.get("type") == "messages":
                 print("TYPE == MESSAGES")
@@ -92,6 +109,7 @@ class ConnectionManager:
                 print("Неверная структура запроса")
         except asyncio.TimeoutError:
             print("Ошибка: долгое ожидание")
+
 
     async def receive_requests_task(self):
         while True:
@@ -110,7 +128,6 @@ class ConnectionManager:
                 return False
             finally:
                 await self.disconnect()
-
 
 
     async def get_messages(self):
@@ -144,11 +161,37 @@ class ConnectionManager:
                 print(f"Error get_messages_task: {e}")
                 await self.disconnect()
                 break
-            finally:
+
+
+    async def send_messages(self, messages: List[Dict]):
+        messages_data = default_sending_messages(messages)
+        is_send = await self.send_data_with_ack(messages_data)
+        if is_send:
+            return
+        # put back
+        for message in messages:
+            await store_message(message["chat_id"], json.dumps(message))
+
+    async def send_all_messages_by_chunks(self):
+        messages = await get_all_messages_for_user_id(self.user_id)
+        messages_chunks = split_messages(messages)
+        for messages_chunk in messages_chunks:
+            await self.send_messages(messages_chunk)
+
+    async def send_messages_task(self):
+        while True:
+            try:
+                await self.send_all_messages_by_chunks()
+            except WebSocketDisconnect:
+                print("send_messages_task - WebSocketDisconnect")
                 await self.disconnect()
+                break
+            except Exception as e:
+                print(f"send_messages_task - Exception: {e}")
+                await self.disconnect()
+                break
 
 
-    # # возвращаем False, если не получилось отправить
     # async def send_new_messages_for_user(self, websocket: WebSocket, user_id: int) -> bool:
     #     messages_part = await get_part_chat_messages(user_id)           # получаем первые n(=20) сообщений из redis
     #     if len(messages_part) == 0:
