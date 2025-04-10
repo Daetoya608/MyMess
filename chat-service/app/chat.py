@@ -29,8 +29,16 @@ def decode_jwt(token: str):
 
 print(create_jwt(
     payload={
-        "id": 5,
-        "username": "forexample"
+        "id": 1,
+        "username": "forexample1"
     }
 ))
-print(decode_jwt("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwidXNlcm5hbWUiOiJmb3JleGFtcGxlIiwiZXhwIjoxNzQzODAyMjIyfQ.QlyFkcIwBVM0glSFhgP-HOZZrfK7kbL-b8DOPjKGik0"))
+
+print("--------------")
+
+print(create_jwt(
+    payload={
+        "id": 2,
+        "username": "forexample2"
+    }
+))

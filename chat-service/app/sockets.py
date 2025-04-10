@@ -1,12 +1,31 @@
+import json
+
 from fastapi import APIRouter, WebSocket, FastAPI, WebSocketDisconnect
 import asyncio
 import hashlib
 from connection_manager import global_connection_manager
 from data_transform import get_token_data_from_websocket
 
+from chat_redis import redis_client
 # socket_router = APIRouter()
 
 app = FastAPI()    # удалить потом
+
+def create_message(chat_id: int, sender_id: int, content_text: str):
+    dict_res = {
+        "sender_id": sender_id,
+        "chat_id": chat_id,
+        "content_text": content_text
+    }
+    return dict_res
+
+
+# @app.on_event("startup")
+# async def startup():
+#     for i in range(1, 4):
+#         await redis_client.rpush("chat:1", json.dumps(create_message(1, 1, f"message1_{i}")))
+#     for i in range(1, 4):
+#         await redis_client.rpush("chat:1", json.dumps(create_message(1, 2, f"message2_{i}")))
 
 
 @app.websocket("/ws")
@@ -18,9 +37,14 @@ async def websocket_endpoint(websocket: WebSocket):
         # задачи будут автоматически запущены внутри start_task()
         task1 = asyncio.create_task(con_man.receive_requests_task())
         task2 = asyncio.create_task(con_man.get_messages_task())
+        # task3 = asyncio.create_task(con_man.send_messages_task())
+
+        # global_connection_manager.users_tasks[con_man.user_id].append(task1)
+        # global_connection_manager.users_tasks[con_man.user_id].append(task3)
 
         await task1
         await task2
+        # await task3
     except WebSocketDisconnect:
         print("Пользователь отключился")
     except Exception as e:

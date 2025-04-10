@@ -53,7 +53,7 @@ def default_sending_messages(messages: List[Dict]):
 
 def split_messages(messages: List[Dict], num_split: int = 20):
     begin_list = lambda x: num_split * x
-    end_list = lambda x: x if x < len(messages) else len(messages)
+    end_list = lambda x: num_split * x if num_split * x < len(messages) else len(messages)
     return [messages[begin_list(i):end_list(i + 1)] for i in range(math.ceil(len(messages)/num_split))]
 
 
@@ -93,6 +93,7 @@ class ConnectionManager:
     async def receive_requests(self):
         try:
             if self.websocket.client_state != WebSocketState.CONNECTED:
+                print("receive_requets - disconnect")
                 raise WebSocketDisconnect
             print("Ждем данных от клиента")
             request_data: dict = await self.websocket.receive_json()
@@ -112,20 +113,20 @@ class ConnectionManager:
 
 
     async def receive_requests_task(self):
-        while True:
+        while self.websocket.client_state == WebSocketState.CONNECTED:
             try:
                 print("receive_requests_task-1")
                 await self.receive_requests()
             except WebSocketDisconnect:
                 await self.disconnect()
-                print("receive_requests_task-97")
-                # break
-                return False
+                print("receive_requests_task - WebSocketDisconnect")
+                break
+                # return False
             except Exception as e:
-                print(f"Ошибка: {e}")
+                print(f"receive_requests_task - Exception: {e}")
                 await self.disconnect()
-                # break
-                return False
+                break
+                # return False
             finally:
                 await self.disconnect()
 
@@ -149,7 +150,7 @@ class ConnectionManager:
 
     async def get_messages_task(self):
         print("enter get_messages_task")
-        while True:
+        while self.websocket.client_state == WebSocketState.CONNECTED:
             print("get_message_task-117")
             try:
                 await self.get_messages()
@@ -173,15 +174,20 @@ class ConnectionManager:
             await store_message(message["chat_id"], json.dumps(message))
 
     async def send_all_messages_by_chunks(self):
+        print("send_all_messages_by_chunks_{begins}")
         messages = await get_all_messages_for_user_id(self.user_id)
+        # print(messages)
         messages_chunks = split_messages(messages)
+        print(f"messages_chunks: {messages_chunks}")
         for messages_chunk in messages_chunks:
+            # print(f"messages_chunk: {messages_chunk}")
             await self.send_messages(messages_chunk)
 
     async def send_messages_task(self):
-        while True:
+        while self.websocket.client_state == WebSocketState.CONNECTED:
             try:
                 await self.send_all_messages_by_chunks()
+                await asyncio.sleep(3)
             except WebSocketDisconnect:
                 print("send_messages_task - WebSocketDisconnect")
                 await self.disconnect()
@@ -190,6 +196,7 @@ class ConnectionManager:
                 print(f"send_messages_task - Exception: {e}")
                 await self.disconnect()
                 break
+
 
 
     # async def send_new_messages_for_user(self, websocket: WebSocket, user_id: int) -> bool:
@@ -256,6 +263,7 @@ class GlobalConnectionManager:
         self.active_connections: Dict[int, ConnectionManager] = {}
         self.to_delete_queue: asyncio.Queue = asyncio.Queue()
         self.to_activate_connection: asyncio.Queue = asyncio.Queue()
+        self.users_tasks: Dict[int, List[asyncio.Task]] = {}
 
     async def new_connection(self, websocket: WebSocket):
         user_data = get_token_data_from_websocket(websocket)
@@ -271,9 +279,12 @@ class GlobalConnectionManager:
 
     async def delete_disconnected(self):
         while True:
+            print("delete_disconnected - {begins}")
             try:
-                disconnected_user: ConnectionManager = await asyncio.wait_for(self.to_delete_queue.get(), timeout=1)
+                disconnected_user: ConnectionManager = await asyncio.wait_for(self.to_delete_queue.get(), timeout=10)
                 del self.active_connections[disconnected_user.user_id]
+                for task in self.users_tasks[disconnected_user.user_id]:
+                    task.cancel()
             except asyncio.TimeoutError:
                 continue
 
@@ -282,7 +293,7 @@ class GlobalConnectionManager:
             try:
                 connection_manager: ConnectionManager = await asyncio.wait_for(
                     self.to_activate_connection.get(),
-                    timeout=1
+                    timeout=3
                 )
                 # asyncio.create_task(connection_manager.receive_requests_task())
                 # asyncio.create_task(connection_manager.get_messages_task())

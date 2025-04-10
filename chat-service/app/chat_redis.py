@@ -1,16 +1,17 @@
 import redis.asyncio as aioredis
 import json
 from schemas import MessageBase
-from models import get_chats_by_user_id, get_unique_user_ids
+from models import Connect, get_chats_by_user_id, get_unique_user_ids, get_users_by_chat_id
 from typing import List, Dict
 
 redis_client = aioredis.Redis(host='localhost', port=6379, db=0)
 
 
 async def store_message(chat_id: int, message_json: str):
-    """Сохраняет сообщение для чата в Redis."""
-    key = f"chat:{chat_id}"
-    await redis_client.rpush(key, message_json)  # Сохраняем как JSON-строку
+    user_ids: List[Connect] = await get_users_by_chat_id(chat_id)
+    for user_id in user_ids:
+        key = f"user:{user_id}"
+        await redis_client.rpush(key, message_json)
 
 
 async def get_all_chat_messages(chat_id):
@@ -64,9 +65,11 @@ async def get_chat_ids_by_user_id(user_id: int):
 
 
 async def get_all_messages_for_user_id(user_id: int) -> List[Dict]:
+    print("get_all_messages_for_user_id - {begins}")
     chat_ids = await get_chat_ids_by_user_id(user_id)
     result = []
     for chat_id in chat_ids:
         messages = await get_and_delete_all_chat_messages(chat_id)
+        # print(f"messages: {messages}")
         result.extend(messages)
     return result

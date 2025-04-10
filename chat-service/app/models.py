@@ -96,6 +96,14 @@ async def get_chats_by_user_id(user_id: int) -> list:
         return result.scalars().all()
 
 
+async def get_users_by_chat_id(chat_id: int) -> list:
+    async with new_session() as session:
+        result = await session.execute(
+            select(Connect).where(Connect.chat_id == chat_id)
+        )
+        return result.scalars().all()
+
+
 async def get_unique_user_ids():
     async with new_session() as session:
         result = await session.execute(
