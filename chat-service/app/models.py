@@ -112,6 +112,13 @@ async def get_unique_user_ids():
         return result.scalars().all()
 
 
+async def get_unique_chat_ids():
+    async with new_session() as session:
+        result = await session.execute(
+            select(distinct(Connect.chat_id))
+        )
+        return result.scalars().all()
+
 # async def get_content_by_id(content_id: int) -> Content | None:
 #     async with new_session() as session:
 #         content = await session.get(Content, content_id)

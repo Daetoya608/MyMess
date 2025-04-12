@@ -37,14 +37,14 @@ async def websocket_endpoint(websocket: WebSocket):
         # задачи будут автоматически запущены внутри start_task()
         task1 = asyncio.create_task(con_man.receive_requests_task())
         task2 = asyncio.create_task(con_man.get_messages_task())
-        # task3 = asyncio.create_task(con_man.send_messages_task())
+        task3 = asyncio.create_task(con_man.send_messages_task())
 
         # global_connection_manager.users_tasks[con_man.user_id].append(task1)
         # global_connection_manager.users_tasks[con_man.user_id].append(task3)
 
         await task1
         await task2
-        # await task3
+        await task3
     except WebSocketDisconnect:
         print("Пользователь отключился")
     except Exception as e:
