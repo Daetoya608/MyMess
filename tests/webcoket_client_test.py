@@ -108,36 +108,39 @@ async def get_message_task(websocket: websockets.ClientConnection):
             continue
 
 
-async def send_message(websocket: websockets.ClientConnection):
-    message = await asyncio.to_thread(input, "Введи сообщение: ")  # input("Write message: ")
+async def send_message(websocket: websockets.ClientConnection, sender_id):
+    message = await asyncio.to_thread(input)  # input("Write message: ")
 
     if message == "result":
         print(f"COUNT: {len(result_list)}\n\ndata={result_list}")
         return True
 
-    await websocket.send(json.dumps(create_messages(message, 1, 1)))
+    await websocket.send(json.dumps(create_messages(message, sender_id, 1)))
     print("Отправлено")
     response = await ack_queue.get()
     print(f"Получено от сервера, ack: {response}")
     await asyncio.sleep(0.1)
 
-async def send_message_task(websocket: websockets.ClientConnection):
+async def send_message_task(websocket: websockets.ClientConnection, sender_id):
     while True:
         try:
-            await send_message(websocket)
+            await send_message(websocket, sender_id)
         except Exception as e:
             print(f"send_message_task - Exception: {e}")
             continue
 
 
 async def websocket_client():
-    uri = "ws://localhost:8000/ws"  # адрес твоего сервера
+    domain = input("Введите сайт: ")
+    uri = f"wss://{domain}/ws"  # адрес твоего сервера
+    id = int(input("Введи id: "))
     token = input("Введите токен: ")
+
 
     async with websockets.connect(uri, additional_headers={"token": token}) as websocket:
         task1 = asyncio.create_task(receiver_handler_task(websocket))
         task2 = asyncio.create_task(get_message_task(websocket))
-        task3 = asyncio.create_task(send_message_task(websocket))
+        task3 = asyncio.create_task(send_message_task(websocket, id))
 
         await task1
         await task2

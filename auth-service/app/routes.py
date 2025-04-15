@@ -34,10 +34,15 @@ async def register(user: UserCreate):
         return JSONResponse(status_code=500, content={"status": status})
 
 
-    token = create_jwt({"sub": user.username})
+    token = create_jwt({
+        "sub": user.username,
+        "username": user.username,
+        "id": new_user_id,
+        "email": user.email
+    })
 
-    return JSONResponse(content={"access_token": token, "token_type": "bearer"},
-                        status_code=200)
+    return JSONResponse(content={"token": token, "token_type": "bearer",
+                                 "id": new_user_id}, status_code=200)
 
 
 @router.post("/login", response_model=Token)
@@ -48,8 +53,13 @@ async def login(user: UserLogin):
     if not check_hash_and_password(user.password, try_find_user.password_hash):
         raise HTTPException(status_code=400, detail=f"Not correct username or password {try_find_user.password_hash} and {hash(user.password)}")
 
-    token = create_jwt({"sub": user.username})
-    return JSONResponse(content={"access_token": token, "token_type": "bearer"},
+    token = create_jwt({
+        "sub": try_find_user.username,
+        "username": try_find_user.username,
+        "id": try_find_user.id,
+        "email": try_find_user.email
+    })
+    return JSONResponse(content={"access_token": token, "token_type": "bearer", "id": try_find_user.id},
                         status_code=200)
 
 

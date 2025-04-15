@@ -9,7 +9,7 @@ from data_transform import get_token_data_from_websocket
 from chat_redis import redis_client
 # socket_router = APIRouter()
 
-app = FastAPI()    # удалить потом
+router = APIRouter()
 
 def create_message(chat_id: int, sender_id: int, content_text: str):
     dict_res = {
@@ -28,7 +28,7 @@ def create_message(chat_id: int, sender_id: int, content_text: str):
 #         await redis_client.rpush("chat:1", json.dumps(create_message(1, 2, f"message2_{i}")))
 
 
-@app.websocket("/ws")
+@router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     try:
         print("Приняли соединение")

@@ -27,18 +27,3 @@ def decode_jwt(token: str):
         return None
 
 
-print(create_jwt(
-    payload={
-        "id": 1,
-        "username": "forexample1"
-    }
-))
-
-print("--------------")
-
-print(create_jwt(
-    payload={
-        "id": 2,
-        "username": "forexample2"
-    }
-))

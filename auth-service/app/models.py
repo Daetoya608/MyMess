@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from database import Base, new_session
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)

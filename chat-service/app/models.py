@@ -22,7 +22,7 @@ class Connect(Base):
     user_id = Column(Integer, nullable=False)
     chat_id = Column(Integer, ForeignKey("Chat.id"), nullable=False)
 
-    chat = relationship("Chat", back_populates="users")
+    chat = relationship("Chat", back_populates="connects")
 
 
 class Message(Base):
@@ -72,11 +72,11 @@ async def add_message(sender_id: int, chat_id: int, content_text: str):
         session.add(new_message)
         try:
             await session.commit()
-            print(f"Message {new_message} was added")
+            print(f"\n!!!!\nMessage {new_message} was added\n!!!!\n")
             return new_message
         except IntegrityError:
             await session.rollback()
-            print(f"Error: cant add message {new_message}")
+            print(f"\n???????? Error: cant add message {new_message}\n")
             return None
 
 

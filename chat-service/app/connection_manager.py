@@ -2,13 +2,11 @@ import json
 import asyncio
 import time
 import math
-from typing import Annotated, Dict, List
+from typing import Dict, List
 from fastapi.websockets import WebSocketState
-from fastapi import WebSocket, WebSocketDisconnect, APIRouter, WebSocketException
-from chat import decode_jwt
-from data_transform import get_token_data_from_websocket, get_message_from_token
-from schemas import MessageBase
-from models import add_message, add_message_by_obj
+from fastapi import WebSocket, WebSocketDisconnect
+from data_transform import get_token_data_from_websocket
+from models import  add_message_by_obj
 from chat_redis import (
     store_message,
     get_and_delete_all_user_messages
@@ -98,7 +96,7 @@ class ConnectionManager:
     async def receive_requests(self):
         try:
             if self.websocket.client_state != WebSocketState.CONNECTED:
-                print("receive_requets - disconnect")
+                # print("receive_requets - disconnect")
                 raise WebSocketDisconnect
             print("Ждем данных от клиента")
             request_data: dict = await self.websocket.receive_json()
@@ -122,7 +120,7 @@ class ConnectionManager:
     async def receive_requests_task(self):
         while self.websocket.client_state == WebSocketState.CONNECTED:
             try:
-                print("receive_requests_task-1")
+                # print("receive_requests_task-1")
                 await self.receive_requests()
             except WebSocketDisconnect:
                 await self.disconnect()
@@ -142,16 +140,17 @@ class ConnectionManager:
         try:
             # requests_data = await asyncio.wait_for(self.messages_queue.get(), timeout=10)
             requests_data = await self.messages_queue.get()
-            print(f"!!!!!! requests_data = {requests_data}")
+            # print(f"!!!!!! requests_data = {requests_data}")
             messages = requests_data.get("messages")
             if messages is None:
                 print("Ошибка: get_messages -> messages == None")
             for message in messages:
+                message["sender_id"] = self.user_id
                 chat_id = message["chat_id"]
-                print(f"тип chat_id = {type(chat_id)}, chat_id = {chat_id}")
-                print(f"сохранено {message}")
+                # print(f"тип chat_id = {type(chat_id)}, chat_id = {chat_id}")
+                # print(f"сохранено {message}")
                 await store_message(chat_id, json.dumps(message))
-                #await add_message_by_obj(message)
+                await add_message_by_obj(message)
         except asyncio.TimeoutError:
             print("timeout error")
             return
@@ -160,7 +159,7 @@ class ConnectionManager:
     async def get_messages_task(self):
         print("enter get_messages_task")
         while self.websocket.client_state == WebSocketState.CONNECTED:
-            print("get_message_task - {cycle-begin}")
+            # print("get_message_task - {cycle-begin}")
             try:
                 await self.get_messages()
             except WebSocketDisconnect:
@@ -174,6 +173,7 @@ class ConnectionManager:
 
 
     async def send_messages(self, messages: List[Dict]):
+        print(f"Messages: {messages}")
         messages_data = default_sending_messages(messages)
         is_send = await self.send_data_with_ack(messages_data)
         if is_send:
@@ -185,10 +185,10 @@ class ConnectionManager:
 
 
     async def send_all_messages_by_chunks(self):
-        print("send_all_messages_by_chunks_{begins}")
+        # print("send_all_messages_by_chunks_{begins}")
         messages = await get_and_delete_all_user_messages(self.user_id)
         messages_chunks = split_messages(messages)
-        print(f"messages_chunks: {messages_chunks}")
+        # print(f"messages_chunks: {messages_chunks}")
         if len(messages_chunks) == 0:
             return False
         for messages_chunk in messages_chunks:
@@ -210,6 +210,8 @@ class ConnectionManager:
                 await self.disconnect()
                 break
 
+
+    async def create_new_chat(self, ):
 
 
 class GlobalConnectionManager:
@@ -265,6 +267,6 @@ class GlobalConnectionManager:
 
 global_connection_manager = GlobalConnectionManager()
 # task1 = asyncio.create_task(global_connection_manager.start_task())
-task2 = asyncio.create_task(global_connection_manager.delete_disconnected())
+# task2 = asyncio.create_task(global_connection_manager.delete_disconnected())
 
 

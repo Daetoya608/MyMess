@@ -47,10 +47,12 @@ async def delete_all_user_messages(user_id):
 
 
 async def get_and_delete_all_user_messages(user_id):
+    print(f"get_and_delete_all_user_messages")
     messages = await get_all_user_messages(user_id)
     size = len(messages)
     key = f"user:{user_id}"
     await redis_client.ltrim(key, size, -1)
+    print(f"g_messages: {messages}")
     return messages
 
 
@@ -81,15 +83,3 @@ async def get_chat_ids_by_user_id(user_id: int):
     key = f"user:{user_id}"
     chats = await redis_client.lrange(key, 0, -1)
     return [json.loads(chat.decode()) for chat in chats]
-
-
-# # изменить
-# async def get_all_messages_for_user_id(user_id: int) -> List[Dict]:
-#     print("get_all_messages_for_user_id - {begins}")
-#     chat_ids = await get_chat_ids_by_user_id(user_id)
-#     result = []
-#     for chat_id in chat_ids:
-#         messages = await get_and_delete_all_chat_messages(chat_id)
-#         # print(f"messages: {messages}")
-#         result.extend(messages)
-#     return result
