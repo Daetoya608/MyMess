@@ -111,6 +111,8 @@ class ConnectionManager:
                 print(f"ack = {request_data}")
                 # await self.ack_queue.put(request_data)
                 self.ack_set.add(request_data["time_key"])
+            elif request_data.get("type") == "commands":
+
             else:
                 print("Неверная структура запроса")
         except asyncio.TimeoutError:

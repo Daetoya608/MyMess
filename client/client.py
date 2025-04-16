@@ -14,6 +14,7 @@ class Client:
         self.settings: ClientSettings = client_settings
 
 
+
     async def send_ask(self, websocket: websockets.ClientConnection, time_key: int):
         try:
             requests_data = {
@@ -70,14 +71,15 @@ class Client:
                 continue
 
 
-    async def send_message(self, websocket: websockets.ClientConnection, chat_id: int):
-        message = await asyncio.to_thread(input)  # input("Write message: ")
+    async def send_message(self, websocket: websockets.ClientConnection, message):
+        # message = await asyncio.to_thread(input)  # input("Write message: ")
+        #
+        # if message == "result":
+        #     print(f"COUNT: {len(self.result_list)}\n\ndata={self.result_list}")
+        #     return True
 
-        if message == "result":
-            print(f"COUNT: {len(self.result_list)}\n\ndata={self.result_list}")
-            return True
-
-        await websocket.send(json.dumps(create_messages(message, chat_id)))
+        # await websocket.send(json.dumps(create_messages(message, chat_id)))
+        await websocket.send(json.dumps(message))
         print("Отправлено")
         response = await self.ack_queue.get()
         # print(f"Получено от сервера, ack: {response}")
