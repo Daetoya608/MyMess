@@ -1,0 +1,40 @@
+from typing import List, Dict
+from client_database import add_chat, add_connect
+
+
+async def operation_new_chat(self, chat_name: str, members_id: List[int]):
+    new_chat = await add_chat(chat_name)
+    if new_chat is None:
+        print("create_new_chat - creating chat error")
+        return None
+    successful_create_members = []
+    for member_id in members_id:
+        new_connection = await add_connect(member_id, new_chat.id)
+        if new_connection is None:
+            continue
+        successful_create_members.append(new_connection.user_id)
+
+    self.chats_members[new_chat.id] = successful_create_members
+    print(f"created new chat - {new_chat.chat_name}, id={new_chat.id}")
+    return new_chat
+
+
+async def operation_handler(operation: Dict):
+    """
+
+    :param operation: ={
+        "operation": str, =(new_chat, )
+        "chat_id": int,
+        "chat_name": str,
+        "members": list[int]
+    }
+    :return Chat or None:
+    """
+    try:
+        operation_type = operation["operation"]
+        if operation_type == "new_chat":
+            new_chat = await operation_new_chat(operation["chat_name"], operation["members"])
+            return new_chat
+    except Exception as e:
+        print(f"operation_handler - Exception: {e}")
+        return None
