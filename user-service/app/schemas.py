@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
+from typing import List, Dict
 
 class UserBase(BaseModel):
     username: str = Field(...)
@@ -20,3 +21,6 @@ class UserUpdate(BaseModel):
 #     id: int
 #
 #     config = ConfigDict(from_attributes=True)
+
+class UserInfoRequest(BaseModel):
+    users_ids: List[int] = Field(...)

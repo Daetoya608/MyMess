@@ -13,7 +13,7 @@ async def create_user_in_user_service(username: str, nickname: str, email: str):
         }
     )
     user_service_url = f"http://{host}:8002/user-service/users/{token}"
-
+    print(f"create_user_in_user_service - mid")
     async with httpx.AsyncClient() as client:
         response = await client.post(user_service_url)
         return response

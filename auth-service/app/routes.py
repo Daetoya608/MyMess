@@ -5,6 +5,7 @@ from auth import create_jwt, hash_password, check_hash_and_password
 from fastapi.responses import JSONResponse
 from serviceRequests import create_user_in_user_service
 
+
 router = APIRouter()
 
 
@@ -16,33 +17,34 @@ async def register(user: UserCreate):
             status_code=400,
             detail="username already exists"
         )
-    new_user_id: int = await add_user(username=user.username,
-                                      email=user.email,
-                                      password_hash=hash_password(user.password))
-    if new_user_id <= 0:
+    response = await create_user_in_user_service(
+        user.username, user.nickname, user.email
+    )
+
+    if not (200 <= response.status_code < 300):
+        return JSONResponse(status_code=500, content={"status": False, "description": "ошибка создания"})
+    new_user_from_user_service = response.json()
+    new_user: User = await add_user(user_id=new_user_from_user_service["user_id"],
+                                    username=new_user_from_user_service["username"],
+                                    email=new_user_from_user_service["email"],
+                                    password_hash=hash_password(user.password))
+    if new_user is None:
         raise HTTPException(
             status_code=500,
             detail="something went wrong. Try again later"
         )
-    response = await create_user_in_user_service(
-        user.username, user.nickname, user.email
-    )
-    # !!!!!!!!!!!!!!! ДОБАВИТЬ  ПРОВЕРКУ СОВПАДЕНИЯ ID
-
-    if not (200 <= response.status_code < 300):
-        status = await delete_user_by_username(user.username)
-        return JSONResponse(status_code=500, content={"status": status})
-
 
     token = create_jwt({
-        "sub": user.username,
-        "username": user.username,
-        "id": new_user_id,
-        "email": user.email
+        "sub": new_user.username,
+        "username": new_user.username,
+        "id": new_user.id,
+        "email": new_user.email
     })
 
     return JSONResponse(content={"token": token, "token_type": "bearer",
-                                 "id": new_user_id}, status_code=200)
+                                 "user_id": new_user.user_id, "username": new_user.username,
+                                 "email": new_user.email, "nickname": new_user_from_user_service["nickname"]},
+                        status_code=200)
 
 
 @router.post("/login", response_model=Token)

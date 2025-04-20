@@ -7,23 +7,24 @@ class User(Base):
     __tablename__ = "user"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, nullable=False)
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     password_hash = Column(String)
 
 
-async def add_user(username: str, email: str, password_hash: str) -> int | Column[int]:
+async def add_user(user_id, username: str, email: str, password_hash: str):
     async with new_session() as session:
-        new_user = User(username=username, email=email, password_hash=password_hash)
+        new_user = User(user_id=user_id, username=username, email=email, password_hash=password_hash)
         session.add(new_user)
         try:
             await session.commit()
-            print(f"User {new_user} was added")
-            return new_user.id
+            print(f"User:{new_user.id} {new_user.username} was added")
+            return new_user
         except IntegrityError:
             await session.rollback()
             print("Error: user is in base")
-            return 0
+            return None
 
 async def get_user_by_id(user_id: int) -> User | None:
     async with new_session() as session:

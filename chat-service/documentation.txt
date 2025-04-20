@@ -131,10 +131,77 @@ chat:{chat_id} [user_id: int]
     "time_key": int
     "commands":  [
         {
-            "command": str  (create_chat, )
+            "command": str,  (create_chat, )
+            "chat_name": str,
             "members": list = [
                 *ids: int
             ]
         },
     ]
 }
+
+-----------------------------------------------------------------
+
+/chat chat_name member_id [, *members_ids]
+
+------------------------------------------------------------------
+
+user_new_chats:{user_id} [chats_id: int]
+
+-----------------------------------------------------------------
+
+(сервер -> клиент)
+уведомление о создании нового чата
+
+{
+    "type":= "operations"
+    "time_key": int
+    "operations": [
+        {
+            "operation": str, =(new_chat, )
+            "chat_id": int,
+            "chat_name": str,
+            "members": list[int] = [*members_ids]
+        }
+    ]
+}
+
+-------------------------------------------------------------------
+
+(сервер -> клиент)
+информация о пользователях
+
+{
+    "type":= "users_info",
+    "time_key": int,
+    "users_info": [
+        {
+            "user_id": int,
+            "username": str,
+            "nickname": str,
+        }
+    ]
+}
+
+-------------------------------------------------------------------
+
+(chat_service -> user_service)
+получить данные по пользователях
+
+httpx.params = {users_ids: "id1,id2,"}
+
+--------------------------------------------------------------------
+
+(user_service -> chat_service)
+данные о клиентах
+
+{
+    "users_data": list[dict] = [
+        {
+            "user_id": int,
+            "username": str,
+            "nickname": str,
+        },
+    ]
+}
+

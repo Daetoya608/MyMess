@@ -1,4 +1,4 @@
-from scripts import is_reg, load_settings, save_settings, server_registration_process
+from scripts import is_reg, load_settings, save_settings
 from typing import Dict
 
 class ClientSettings:

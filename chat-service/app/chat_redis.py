@@ -33,6 +33,28 @@ async def store_message(chat_id: int, message_json: str):
         await redis_client.rpush(key, message_json)
 
 
+async def store_new_chat(chat_id: int, members_ids: List[int]):
+    key = f"chat:{chat_id}"
+    await redis_client.rpush(key, *members_ids)
+    for member_id in members_ids:
+        user_key = f"user_new_chats:{member_id}"
+        await redis_client.rpush(user_key, chat_id)
+
+
+async def get_all_new_chats_for_user(user_id: int) -> List[int]:
+    key = f"user_new_chats:{user_id}"
+    chats = await redis_client.lrange(key, 0, -1)
+    return [json.loads(chat.decode()) for chat in chats]
+
+
+async def get_and_delete_all_new_chats(user_id: int):
+    chats = await get_all_new_chats_for_user(user_id)
+    size = len(chats)
+    key = f"user_new_chats:{user_id}"
+    await redis_client.ltrim(key, size, -1)
+    return chats
+
+
 async def get_all_user_messages(user_id):
     """Получает и удаляет все новые сообщения чата из Redis."""
     key = f"user:{user_id}"
@@ -47,12 +69,12 @@ async def delete_all_user_messages(user_id):
 
 
 async def get_and_delete_all_user_messages(user_id):
-    print(f"get_and_delete_all_user_messages")
+    # print(f"get_and_delete_all_user_messages")
     messages = await get_all_user_messages(user_id)
     size = len(messages)
     key = f"user:{user_id}"
     await redis_client.ltrim(key, size, -1)
-    print(f"g_messages: {messages}")
+    # print(f"g_messages: {messages}")
     return messages
 
 
@@ -62,9 +84,9 @@ async def get_part_user_messages(user_id: int, limit: int = 20):
     return {i: json.loads(msg.decode()) for i, msg in enumerate(messages)}
 
 
-async def delete_part_user_messages(user_id: int, limit: int = 20):
-    key = f"chat:{user_id}"
-    await redis_client.ltrim(key, limit, -1)
+# async def delete_part_user_messages(user_id: int, limit: int = 20):
+#     key = f"chat:{user_id}"
+#     await redis_client.ltrim(key, limit, -1)
 
 
 async def save_user_chats(user_id: int, chat_ids: List[int]):

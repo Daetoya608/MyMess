@@ -1,9 +1,11 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy import Column, Integer, Boolean, DateTime, Text, ForeignKey, select, distinct
+from sqlalchemy import Column, Integer, Boolean, DateTime, Text, ForeignKey, select, distinct, func
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
+from typing import Dict, List
+
 
 # Для SQLite нужно использовать aiosqlite
 DATABASE_URL = "sqlite+aiosqlite:///./client.db"  # файл test.db в текущей директории
@@ -28,7 +30,7 @@ class Chat(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     chat_name = Column(Text, nullable=False)
-    created_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=func.now())
 
     messages = relationship("Message", back_populates="chat")
     connects = relationship("Connect", back_populates="chat")
@@ -55,6 +57,38 @@ class Message(Base):
     content_text = Column(Text, nullable=False)
 
     chat = relationship("Chat", back_populates="messages")
+
+
+class User(Base):
+    __tablename__ = "User"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, unique=True, nullable=False)
+    username = Column(Text, unique=True, nullable=False)
+    nickname = Column(Text, nullable=False)
+
+
+async def add_user(user_id: int, username: str, nickname: str):
+    async with new_session() as session:
+        new_user = User(user_id=user_id, username=username, nickname=nickname)
+        session.add(new_user)
+        try:
+            await session.commit()
+            print(f"User {new_user.username} was added")
+            return new_user
+        except IntegrityError:
+            await session.rollback()
+            print(f"Error: cant add user {new_user.username}")
+            return None
+
+
+async def add_user_by_obj(user_info: Dict):
+    result = await add_user(
+        user_id=user_info["user_id"],
+        username=user_info["username"],
+        nickname=user_info["nickname"]
+    )
+    return result
 
 
 async def add_chat(chat_name: str) -> Chat | None:
@@ -137,3 +171,6 @@ async def get_unique_chat_ids():
             select(distinct(Connect.chat_id))
         )
         return result.scalars().all()
+
+
+

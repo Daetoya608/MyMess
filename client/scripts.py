@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Dict, List
 import os.path
 import time
 from server_requests import register
@@ -18,12 +18,35 @@ def create_messages(text_message: str, chat_id: int):
     return request_data
 
 
+def create_chat(chat_name: str, members_list: List[int]):
+    request_data = {
+        "type": "commands",
+        "time": time.perf_counter_ns(),
+        "commands": [
+            {
+                "command": "create_chat",
+                "chat_name": chat_name,
+                "members": members_list,
+            },
+        ]
+    }
+    return request_data
+
+
 def default_answer(time_key):
     answer: dict = {
         "type": "ack",
         "time_key": time_key
     }
     return answer
+
+
+def default_func(*args, **kwargs):
+    return
+
+
+async def async_default_func(*args, **kwargs):
+    return
 
 
 def save_settings(settings: Dict):

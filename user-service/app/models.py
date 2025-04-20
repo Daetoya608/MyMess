@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from database import Base, new_session
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
@@ -26,11 +26,11 @@ async def add_user(username: str, nickname: str, email: str,
         try:
             await session.commit()
             print(f"User {new_user} was added")
-            return new_user.id
+            return new_user
         except IntegrityError:
             await session.rollback()
             print("Error: user is in base")
-            return 0
+            return None
 
 
 async def get_user_by_id(user_id: int):

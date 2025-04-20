@@ -67,6 +67,11 @@ async def add_connect(user_id: int, chat_id: int):
 
 
 async def add_message(sender_id: int, chat_id: int, content_text: str):
+    print(f"""
+    sender_id: {type(sender_id)} = {sender_id},
+    chat_id: {type(chat_id)} = {chat_id},
+    content_text: {type(content_text)} = {content_text}
+""")
     async with new_session() as session:
         new_message = Message(sender_id=sender_id, chat_id=chat_id, content_text=content_text)
         session.add(new_message)
@@ -76,7 +81,7 @@ async def add_message(sender_id: int, chat_id: int, content_text: str):
             return new_message
         except IntegrityError:
             await session.rollback()
-            print(f"\n???????? Error: cant add message {new_message}\n")
+            print(f"\n???????? Error: cant add message {new_message.content_text}\n")
             return None
 
 
@@ -101,7 +106,7 @@ async def get_users_by_chat_id(chat_id: int) -> list:
         result = await session.execute(
             select(Connect).where(Connect.chat_id == chat_id)
         )
-        return result.scalars().all()
+        return list(result.scalars().all())
 
 
 async def get_unique_user_ids():
@@ -118,6 +123,13 @@ async def get_unique_chat_ids():
             select(distinct(Connect.chat_id))
         )
         return result.scalars().all()
+
+
+async def get_chat_by_chat_id(chat_id):
+    async with new_session() as session:
+        chat = await session.get(Chat, chat_id)
+        return chat
+
 
 # async def get_content_by_id(content_id: int) -> Content | None:
 #     async with new_session() as session:

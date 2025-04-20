@@ -1,8 +1,8 @@
 from typing import List, Dict
-from client_database import add_chat, add_connect
+from client_database import add_chat, add_connect, add_user_by_obj
 
 
-async def operation_new_chat(self, chat_name: str, members_id: List[int]):
+async def operation_new_chat(chat_name: str, members_id: List[int]):
     new_chat = await add_chat(chat_name)
     if new_chat is None:
         print("create_new_chat - creating chat error")
@@ -14,7 +14,6 @@ async def operation_new_chat(self, chat_name: str, members_id: List[int]):
             continue
         successful_create_members.append(new_connection.user_id)
 
-    self.chats_members[new_chat.id] = successful_create_members
     print(f"created new chat - {new_chat.chat_name}, id={new_chat.id}")
     return new_chat
 
@@ -38,3 +37,11 @@ async def operation_handler(operation: Dict):
     except Exception as e:
         print(f"operation_handler - Exception: {e}")
         return None
+
+
+async def user_info_handler(user_info: Dict):
+    new_user = await add_user_by_obj(user_info)
+    if new_user is None:
+        print(f"\nuser_info_handler - error, user_info = {new_user}")
+        return None
+    return new_user
