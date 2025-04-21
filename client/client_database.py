@@ -74,7 +74,7 @@ async def add_user(user_id: int, username: str, nickname: str):
         session.add(new_user)
         try:
             await session.commit()
-            print(f"User {new_user.username} was added")
+            # print(f"User {new_user.username} was added")
             return new_user
         except IntegrityError:
             await session.rollback()
@@ -97,7 +97,7 @@ async def add_chat(chat_name: str) -> Chat | None:
         session.add(new_chat)
         try:
             await session.commit()
-            print(f"Chat {new_chat} was added")
+            # print(f"Chat {new_chat} was added")
             return new_chat
         except IntegrityError:
             await session.rollback()
@@ -111,7 +111,7 @@ async def add_connect(user_id: int, chat_id: int):
         session.add(new_connect)
         try:
             await session.commit()
-            print(f"Connect {new_connect} was added")
+            # print(f"Connect {new_connect} was added")
             return new_connect
         except IntegrityError:
             await session.rollback()
@@ -125,7 +125,7 @@ async def add_message(sender_id: int, chat_id: int, content_text: str):
         session.add(new_message)
         try:
             await session.commit()
-            print(f"\n!!!!\nMessage {new_message} was added\n!!!!\n")
+            # print(f"\n!!!!\nMessage {new_message} was added\n!!!!\n")
             return new_message
         except IntegrityError:
             await session.rollback()
@@ -155,6 +155,14 @@ async def get_users_by_chat_id(chat_id: int) -> list:
             select(Connect).where(Connect.chat_id == chat_id)
         )
         return list(result.scalars().all())
+
+
+async def get_user_by_user_id(user_id: int):
+    async with new_session() as session:
+        result = await session.execute(
+            select(User).where(User.user_id == user_id)
+        )
+        return result.scalar_one_or_none()
 
 
 async def get_unique_user_ids():

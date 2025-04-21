@@ -1,6 +1,7 @@
 from typing import Dict, List
 from client_database import get_users_by_chat_id, get_unique_chat_ids, add_chat, add_connect
 from scripts import create_chat
+import asyncio
 
 class ClientChats:
 
@@ -8,6 +9,7 @@ class ClientChats:
         # храним словарь (ключ - индекс чата, значение - список индексов участников)
         self.chats_members: Dict[int, List[int]] = dict()
         self.current_chat_id = None
+        self.users: Dict[int, Dict] = dict()
 
 
     async def load_chats(self) -> Dict[int, List[int]]:
@@ -19,10 +21,25 @@ class ClientChats:
         return chats
 
 
+    def add_to_users_dict(self, user_info: Dict):
+        if user_info is None:
+            return
+        self.users[user_info["user_id"]] = user_info
+
+
+    async def get_from_users(self, user_id):
+        while user_id not in self.users:
+            await asyncio.sleep(0.1)
+        return self.users[user_id]
+
+
+    # async def load_users_info(self, ):
+
+
     async def create_new_chat(self, chat_name: str, members_id: List[int]):
         new_chat = await add_chat(chat_name)
         if new_chat is None:
-            print("create_new_chat - creating chat error")
+            # print("create_new_chat - creating chat error")
             return None
         successful_create_members = []
         for member_id in members_id:

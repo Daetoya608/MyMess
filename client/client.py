@@ -5,7 +5,7 @@ from typing import List, Dict
 from scripts import create_messages, default_answer, create_chat, default_func, async_default_func
 from client_settings import ClientSettings
 from client_chats import ClientChats
-from client_handlers import operation_handler, user_info_handler
+from client_handlers import operation_new_chat, user_info_handler
 
 class Client:
 
@@ -61,7 +61,7 @@ class Client:
     async def receiver_handler(self, websocket: websockets.ClientConnection):
         request_str: str = await websocket.recv()
         request_data: dict = json.loads(json.loads(request_str))
-        print(f"receiver_handler - begin, \nrequest_data={request_data}")
+        # print(f"receiver_handler - begin, \nrequest_data={request_data}")
         if request_data.get("type") == "messages":
             await self.getting_messages_queue.put(request_data)
             await self.send_data(websocket, default_answer(request_data.get("time_key")))
@@ -73,7 +73,7 @@ class Client:
             await self.send_data(websocket, default_answer(request_data.get("time_key")))
             await asyncio.sleep(0.1)
         elif request_data.get("type") == "users_info":
-            print(f"\nrequest_data.get == users_info")
+            # print(f"\nrequest_data.get == users_info")
             await self.getting_users_info_queue.put(request_data)
             await self.send_data(websocket, default_answer(request_data.get("time_key")))
             await asyncio.sleep(0.1)
@@ -93,9 +93,9 @@ class Client:
     async def get_message(self, websocket: websockets.ClientConnection):
         data: dict = await self.getting_messages_queue.get()
         # self.result_list.append(data)
-        self.get_message_handler_func(data)
-        await self.async_get_message_handler_func(data)
-        print(f"\ndata-get_message: {data}\n")
+        self.get_message_handler_func(data, self.chats)
+        await self.async_get_message_handler_func(data, self.chats)
+        # print(f"\ndata-get_message: {data}\n")
         await self.send_ask(websocket, int(data["time_key"]))
         await asyncio.sleep(0.1)
 
@@ -121,7 +121,7 @@ class Client:
         messages = await self.sending_messages_queue.get()
         await websocket.send(json.dumps(messages))
 
-        print("Отправлено")
+        # print("Отправлено")
         response = await self.ack_queue.get()
         # print(f"Получено от сервера, ack: {response}")
         await asyncio.sleep(0.1)
@@ -137,11 +137,12 @@ class Client:
 
     async def update_users_info(self):
         data_response = await self.getting_users_info_queue.get()
-        print(f"\nupdate_users_info. data_response={data_response}")
+        # print(f"\nupdate_users_info. data_response={data_response}")
         for user_info in data_response["users_info"]:
             result = await user_info_handler(user_info)
             if result is None:
                 print("update_users_info - result is None")
+            self.chats.add_to_users_dict(user_info)
 
 
     async def update_users_info_task(self):
@@ -156,12 +157,35 @@ class Client:
         await self.sending_messages_queue.put(create_chat(chat_name, members))
 
 
+    async def operation_handler(self, operation: Dict):
+        """
+
+        :param operation: ={
+            "operation": str, =(new_chat, )
+            "chat_id": int,
+            "chat_name": str,
+            "members": list[int]
+        }
+        :return Chat or None:
+        """
+        try:
+            operation_type = operation["operation"]
+            if operation_type == "new_chat":
+                new_chat = await operation_new_chat(operation["chat_name"], operation["members"])
+                # загружать инфу о пользователе из бд
+                print(f"\nchat_name={operation['chat_name']}\nchat_id={operation['chat_id']}\n")
+                return new_chat
+        except Exception as e:
+            print(f"operation_handler - Exception: {e}")
+            return None
+
+
     async def execute_operation(self):
         operation_response = await self.getting_operation_queue.get()
-        print(f"execute_operation - begin. operation_response={operation_response}")
+        # print(f"execute_operation - begin. operation_response={operation_response}")
         for operation in operation_response["operations"]:
-            print(f"\noperation={operation}")
-            result = await operation_handler(operation)
+            # print(f"\noperation={operation}")
+            result = await self.operation_handler(operation)
             if result is None:
                 print("execute_operation - exception")
 

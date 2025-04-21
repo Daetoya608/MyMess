@@ -8,16 +8,29 @@ from scripts import create_messages, create_chat
 import asyncio
 import websockets
 from client_database import create_tables
+from client_chats import ClientChats
 import aiofiles
 
 
-async def get_message_handler(messages: dict):
+async def async_get_message_handler(messages: dict):
     messages_list: list = messages["messages"]
-    print("get_message_handler - begin")
+    # print("get_message_handler - begin")
     async with aiofiles.open("test_chat.txt", mode="a") as file:
         for message in messages_list:
             await file.write(message["content_text"] + "\n")
 
+
+async def async_get_messages_handler_console(messages: dict, chat_obj: ClientChats = None, **kwargs):
+    messages_list: list = messages["messages"]
+    for message in messages_list:
+        user_info = await chat_obj.get_from_users(message["sender_id"])
+        print(f"{user_info['username']}: {message['content_text']}")
+
+
+def get_message_handler(messages: dict, chat_obj: ClientChats = None, **kwargs):
+    messages_list: list = messages["messages"]
+    for message in messages_list:
+        print(f"{message['sender_id']}: {message['content_text']}")
 
 
 async def start():
@@ -58,11 +71,11 @@ async def start():
 async def message_console(client):
     message = await asyncio.to_thread(input)
     if message[0] == "/":
-        print("message_console: begin")
+        # print("message_console: begin")
         message_parts = message.split()
         if message_parts[0] == "/new_chat":
             # client.chats.select_chat(int(message_parts[1]))  # здесь проблема
-            print(f"messages_parts: {message_parts}")
+            # print(f"messages_parts: {message_parts}")
             members_list = [int(message_parts[i]) for i in range(2, len(message_parts))]
             await client.server_request_create_chat(message_parts[1], members_list)
             return {
@@ -70,7 +83,7 @@ async def message_console(client):
                 "is_command": True
             }
         elif message_parts[0] == "/change_chat":
-            print(f"messages_parts: {message_parts}")
+            # print(f"messages_parts: {message_parts}")
             client.chats.select_chat(int(message_parts[1]))
             return {
                 "status": True,
@@ -90,7 +103,8 @@ async def message_console_task(client):
 
 async def websocket_client(domain = "127.0.0.1:8003"):
     client = await start()
-    client.async_get_message_handler_func = get_message_handler
+    # client.get_message_handler_func = get_message_handler
+    client.async_get_message_handler_func = async_get_messages_handler_console
     uri = f"ws://{domain}/ws"  # адрес твоего сервера
     async with websockets.connect(uri, additional_headers={"token": client.settings.token}) as websocket:
         task1 = asyncio.create_task(client.receiver_handler_task(websocket))
@@ -108,12 +122,3 @@ async def websocket_client(domain = "127.0.0.1:8003"):
         await task6
 
 asyncio.run(websocket_client())
-
-
-
-
-# a b a a b a a b a
-# 0 0 1 1 2 3 4 5 6
-
-# a b c a b c a b c
-# 0 0 0 1 2 3 4 5 6

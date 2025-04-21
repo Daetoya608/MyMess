@@ -251,8 +251,8 @@ class ConnectionManager:
         members = [members_connect.user_id for members_connect in members_connects]
         chat = await get_chat_by_chat_id(chat_id)
         new_chat_operation = default_sending_chat(chat_id, chat.chat_name, members)
-        await self.sending_messages_queue.put(new_chat_operation)
         await self.save_users_info(members)
+        await self.sending_messages_queue.put(new_chat_operation)
         print(f"save_new_chats_to_queue - end,\nnew_chat={new_chat_operation}")
 
 
