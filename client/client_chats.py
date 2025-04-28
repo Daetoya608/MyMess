@@ -54,3 +54,4 @@ class ClientChats:
 
     def select_chat(self, chat_id: int):
         self.current_chat_id = chat_id
+

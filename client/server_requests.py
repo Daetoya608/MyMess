@@ -1,14 +1,16 @@
 import requests
-from config import domain
 from typing import Dict
+
+# DOMAIN_HTTP = "https://called-hear-cds-neighborhood.trycloudflare.com"
+DOMAIN_HTTP = input("Введи url auth сервиса: ")
+
 
 def register(username: str, password: str, email: str, nickname: str):
     """return {
         "id": int,
         "status": bool
     }"""
-
-    url = f"http://{domain}/auth-service/register"  # Эндпоинт для регистрации
+    url = f"{DOMAIN_HTTP}/auth-service/register"  # Эндпоинт для регистрации
     data = {
         "username": username,
         "password": password,
@@ -27,7 +29,7 @@ def register(username: str, password: str, email: str, nickname: str):
 def login(username: str, password: str) -> str:
     """"return token: str"""
 
-    url = f"http://{domain}/auth-service/login"  # Эндпоинт для аутентификации
+    url = f"{DOMAIN_HTTP}/auth-service/login"  # Эндпоинт для аутентификации
     data = {
         "username":  username,
         "password": password

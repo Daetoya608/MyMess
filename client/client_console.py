@@ -1,10 +1,8 @@
-from sqlalchemy.util import await_only
-
 from scripts import registration_process_console, load_settings, save_settings
 from server_requests import register, login
 from client_settings import ClientSettings
 from client import Client
-from scripts import create_messages, create_chat
+from scripts import create_messages
 import asyncio
 import websockets
 from client_database import create_tables
@@ -12,12 +10,16 @@ from client_chats import ClientChats
 import aiofiles
 
 
-async def async_get_message_handler(messages: dict):
-    messages_list: list = messages["messages"]
-    # print("get_message_handler - begin")
-    async with aiofiles.open("test_chat.txt", mode="a") as file:
-        for message in messages_list:
-            await file.write(message["content_text"] + "\n")
+
+DOMAIN_WS_http = input("Введи url chat сервиса: ")
+# DOMAIN_WS = "wss://fragrances-reminder-stations-see.trycloudflare.com"
+
+# async def async_get_message_handler(messages: dict):
+#     messages_list: list = messages["messages"]
+#     # print("get_message_handler - begin")
+#     async with aiofiles.open("test_chat.txt", mode="a") as file:
+#         for message in messages_list:
+#             await file.write(message["content_text"] + "\n")
 
 
 async def async_get_messages_handler_console(messages: dict, chat_obj: ClientChats = None, **kwargs):
@@ -101,11 +103,13 @@ async def message_console_task(client):
             print(f"message_console_task - Exception: {e}")
 
 
-async def websocket_client(domain = "127.0.0.1:8003"):
+async def websocket_client():
     client = await start()
     # client.get_message_handler_func = get_message_handler
     client.async_get_message_handler_func = async_get_messages_handler_console
-    uri = f"ws://{domain}/ws"  # адрес твоего сервера
+    # DOMAIN_WS_http = input("Введи url chat сервиса: ")
+    DOMAIN_WS = f"wss://{DOMAIN_WS_http[8:]}"
+    uri = f"{DOMAIN_WS}/ws"  # адрес твоего сервера
     async with websockets.connect(uri, additional_headers={"token": client.settings.token}) as websocket:
         task1 = asyncio.create_task(client.receiver_handler_task(websocket))
         task2 = asyncio.create_task(client.get_message_task(websocket))
