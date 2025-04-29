@@ -1,11 +1,14 @@
 import asyncio
 import websockets
 import json
-from typing import List, Dict
-from scripts import create_messages, default_answer, create_chat, default_func, async_default_func
-from client_settings import ClientSettings
-from client_chats import ClientChats
-from client_handlers import operation_new_chat, user_info_handler
+from typing import List, Dict, Set
+from .scripts import create_messages, default_answer, create_chat, default_func, async_default_func, create_chat_by_usernames
+from .client_settings import ClientSettings
+from .client_chats import ClientChats
+from .client_handlers import operation_new_chat, user_info_handler
+from .client_database import add_message_by_obj
+import queue
+
 
 class Client:
 
@@ -15,11 +18,30 @@ class Client:
         self.getting_operation_queue = asyncio.Queue()
         self.getting_users_info_queue = asyncio.Queue()
         self.ack_queue = asyncio.Queue()
-        # self.result_list: List = []
         self.settings: ClientSettings = client_settings
         self.chats: ClientChats = ClientChats()
         self.get_message_handler_func = default_func
         self.async_get_message_handler_func = async_default_func
+        self.sync_sending_messages_queue = queue.Queue()
+        self.get_new_chat_handler_func = default_func
+        self.async_get_new_chat_handler_func = async_default_func
+
+
+    async def put_from_sync_set_to_queue(self):
+        while self.sync_sending_messages_queue.empty():
+            await asyncio.sleep(0.1)
+        while not self.sync_sending_messages_queue.empty():
+            data = self.sync_sending_messages_queue.get()
+            await self.sending_messages_queue.put(data)
+
+
+    async def put_from_sync_set_to_queue_task(self):
+        while True:
+            try:
+                await self.put_from_sync_set_to_queue()
+            except Exception as e:
+                print(f"put_from_sync_set_to_queue_task - {e}")
+                continue
 
 
     async def send_ask(self, websocket: websockets.ClientConnection, time_key: int):
@@ -63,6 +85,7 @@ class Client:
         request_data: dict = json.loads(json.loads(request_str))
         # print(f"receiver_handler - begin, \nrequest_data={request_data}")
         if request_data.get("type") == "messages":
+            print(f"\nreceiver: {request_data}\n")
             await self.getting_messages_queue.put(request_data)
             await self.send_data(websocket, default_answer(request_data.get("time_key")))
             await asyncio.sleep(0.1)
@@ -91,12 +114,18 @@ class Client:
 
 
     async def get_message(self, websocket: websockets.ClientConnection):
-        data: dict = await self.getting_messages_queue.get()
-        # self.result_list.append(data)
-        self.get_message_handler_func(data, self.chats)
-        await self.async_get_message_handler_func(data, self.chats)
-        # print(f"\ndata-get_message: {data}\n")
-        await self.send_ask(websocket, int(data["time_key"]))
+        data_list: dict = await self.getting_messages_queue.get()
+        await self.send_ask(websocket, int(data_list["time_key"]))
+        for data in data_list["messages"]:
+            new_message = await add_message_by_obj(data)
+            print(f"\nget_message: {new_message}\ndata={data}\n")
+            if new_message:
+                print("\n1111\n")
+                self.chats.add_chat_message(new_message.chat_id, new_message.to_dict())
+                print("\n22222\n")
+            self.get_message_handler_func(data, self.chats)
+            await self.async_get_message_handler_func(data, self.chats)
+            # print(f"\ndata-get_message: {data}\n")
         await asyncio.sleep(0.1)
 
 
@@ -138,6 +167,7 @@ class Client:
     async def update_users_info(self):
         data_response = await self.getting_users_info_queue.get()
         # print(f"\nupdate_users_info. data_response={data_response}")
+        print(f"\ndata_response = {data_response}")
         for user_info in data_response["users_info"]:
             result = await user_info_handler(user_info)
             if result is None:
@@ -157,6 +187,10 @@ class Client:
         await self.sending_messages_queue.put(create_chat(chat_name, members))
 
 
+    def sync_server_request_create_chat(self, chat_name: str, members: List[int]):
+        self.sync_sending_messages_queue.put(create_chat(chat_name, members))
+
+
     async def operation_handler(self, operation: Dict):
         """
 
@@ -172,6 +206,11 @@ class Client:
             operation_type = operation["operation"]
             if operation_type == "new_chat":
                 new_chat = await operation_new_chat(operation["chat_name"], operation["members"])
+                if new_chat:
+                    self.chats.add_chat(operation["chat_id"], operation["members"])
+                    print(f"\nnew_chat:_: {operation}\n")
+                    self.chats.chat_names[operation["chat_id"]] = operation["chat_name"]
+                    # self.get_new_chat_handler_func(operation["chat_name"], operation["chat_id"])
                 # загружать инфу о пользователе из бд
                 print(f"\nchat_name={operation['chat_name']}\nchat_id={operation['chat_id']}\n")
                 return new_chat

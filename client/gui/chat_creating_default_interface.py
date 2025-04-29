@@ -81,3 +81,16 @@ class CreatingChatDialogDefault(object):
         self.add_members_button.setText(_translate("Dialog", "Add"))
         self.confirm_button.setText(_translate("Dialog", "Confirm"))
         self.cancel_button.setText(_translate("Dialog", "Cancel"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Dialog = QtWidgets.QDialog()
+    ui = CreatingChatDialogDefault()
+    ui.setupUi(Dialog)
+
+    Dialog.show()
+
+
+    sys.exit(app.exec_())

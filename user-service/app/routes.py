@@ -69,8 +69,23 @@ async def get_info(users_ids: str = Query(...)):
     return JSONResponse(content={"users_data": users_data}, status_code=200)
 
 
-@router.get("/aboba")
-async def get_aboba(numbers: str = Query(...)):
-    numbers_list = [int(num) for num in numbers.split(",")]
-    print(numbers_list)
-    return JSONResponse(content={}, status_code=200)
+@router.get("/user_id/{username}")
+async def get_user_id(username: str):
+    try_find_user = await get_user_by_username(username)
+    print(try_find_user)
+    if not try_find_user:
+        raise HTTPException(status_code=400, detail="User does not exist")
+
+    return JSONResponse(status_code=200, content={
+        "user_id": try_find_user.id,
+        "username": try_find_user.username,
+        "nickname": try_find_user.nickname,
+        "user_info": try_find_user.info_about_yourself,
+    })
+
+
+# @router.get("/aboba")
+# async def get_aboba(numbers: str = Query(...)):
+#     numbers_list = [int(num) for num in numbers.split(",")]
+#     print(numbers_list)
+#     return JSONResponse(content={}, status_code=200)

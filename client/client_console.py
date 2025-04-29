@@ -56,7 +56,7 @@ async def start():
                 break
 
     while True:
-        settings_data["token"] = login(settings_data["username"], settings_data["password"])
+        settings_data["token"] = login(settings_data["username"], settings_data["password"])['access_token']
         if settings_data["token"] is not None:
             break
 

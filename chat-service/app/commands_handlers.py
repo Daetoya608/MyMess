@@ -25,6 +25,10 @@ async def command_new_chat(chat_name: str, members: List[int]):
     }
 
 
+# async def command_new_chat_by_usernames(chat_name: str, members_usernames: List[str]):
+
+
+
 async def command_handler(command: Dict):
     """
     :param command: =

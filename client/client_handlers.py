@@ -1,5 +1,5 @@
 from typing import List, Dict
-from client_database import add_chat, add_connect, add_user_by_obj
+from .client_database import add_chat, add_connect, add_user_by_obj
 
 
 async def operation_new_chat(chat_name: str, members_id: List[int]):

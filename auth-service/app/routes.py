@@ -61,7 +61,11 @@ async def login(user: UserLogin):
         "id": try_find_user.id,
         "email": try_find_user.email
     })
-    return JSONResponse(content={"access_token": token, "token_type": "bearer", "id": try_find_user.id},
+    return JSONResponse(content={"access_token": token,
+                                 "token": token,
+                                 "token_type": "bearer",
+                                 "id": try_find_user.id,
+                                 "username": try_find_user.username,
+                                 "email": try_find_user.email,
+                                 },
                         status_code=200)
-
-

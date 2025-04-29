@@ -2,7 +2,7 @@ import json
 from typing import Dict, List
 import os.path
 import time
-from server_requests import register
+from .server_requests import register
 
 def create_messages(text_message: str, chat_id: int):
     request_data = {
@@ -27,6 +27,21 @@ def create_chat(chat_name: str, members_list: List[int]):
                 "command": "create_chat",
                 "chat_name": chat_name,
                 "members": members_list,
+            },
+        ]
+    }
+    return request_data
+
+
+def create_chat_by_usernames(chat_name: str, member_usernames: List[str]):
+    request_data = {
+        "type": "commands",
+        "time": time.perf_counter_ns(),
+        "commands": [
+            {
+                "command": "create_chat_by_usernames",
+                "chat_name": chat_name,
+                "members": member_usernames,
             },
         ]
     }
@@ -65,6 +80,15 @@ def load_settings():
 def is_reg():
     return os.path.exists("settings.json")
 
+
+def update_settings(new_data: dict):
+    data = load_settings()
+    if data is None:
+        data = dict()
+    for key in new_data:
+        data[key] = new_data[key]
+    save_settings(data)
+    return data
 
 def registration_process_console() -> Dict[str, str]:
     """return {"username": str, "email": str, "password": str, "nickname": str}"""

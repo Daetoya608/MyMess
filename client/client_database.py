@@ -53,10 +53,19 @@ class Message(Base):
     sender_id = Column(Integer, nullable=False)
     chat_id = Column(Integer, ForeignKey("Chat.id"), nullable=False)
     is_read = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=func.now())
     content_text = Column(Text, nullable=False)
 
     chat = relationship("Chat", back_populates="messages")
+
+    def to_dict(self):
+        data = {
+            "id": self.id,
+            "sender_id": self.sender_id,
+            "chat_id": self.chat_id,
+            "content_text": self.content_text,
+        }
+        return data
 
 
 class User(Base):
@@ -66,6 +75,15 @@ class User(Base):
     user_id = Column(Integer, unique=True, nullable=False)
     username = Column(Text, unique=True, nullable=False)
     nickname = Column(Text, nullable=False)
+
+    def to_dict(self):
+        data = {
+            "id": self.id,
+            "user_id": self.user_id,
+            "username": self.username,
+            "nickname": self.nickname,
+        }
+        return data
 
 
 async def add_user(user_id: int, username: str, nickname: str):
@@ -133,13 +151,17 @@ async def add_message(sender_id: int, chat_id: int, content_text: str):
             return None
 
 
-async def add_message_by_obj(data: dict):
-    await add_message(
-        sender_id=data["sender_id"],
-        chat_id=data["chat_id"],
-        content_text=data["content_text"]
-    )
-
+async def add_message_by_obj(data: dict) -> Message:
+    try:
+        new_message = await add_message(
+            sender_id=data["sender_id"],
+            chat_id=data["chat_id"],
+            content_text=data["content_text"]
+        )
+        return new_message
+    except Exception as e:
+        print(f"add_message_by_obj: {e}")
+        return None
 
 async def get_chats_by_user_id(user_id: int) -> list:
     async with new_session() as session:
@@ -181,4 +203,15 @@ async def get_unique_chat_ids():
         return result.scalars().all()
 
 
+async def get_messages_by_chat_id(chat_id: int):
+    async with new_session() as session:
+        result = await session.execute(
+            select(Message).where(Message.chat_id == chat_id)
+        )
+        return list(result.scalars().all())
 
+
+async def get_unique_chats():
+    async with new_session() as session:
+        result = await session.execute(select(Chat))
+        return list(result.scalars().all())
