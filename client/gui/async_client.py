@@ -1,3 +1,4 @@
+from PyQt5.QtCore import QObject, pyqtSignal
 from ..client import Client
 from ..client_settings import ClientSettings
 from ..scripts import load_settings, update_settings, create_messages
@@ -12,6 +13,8 @@ import websockets
 import threading
 from typing import List, Dict
 from ..client_database import create_tables
+from ..config import chat_uri, load_url_info
+
 
 settings_data = load_settings()
 client_settings = ClientSettings()
@@ -29,12 +32,19 @@ container.setLayout(layout)
 window_manager = WindowManager(container)
 container.setFixedSize(window_manager._current_window.size())
 
-async def auto_set_save_data():
-    await client.chats.auto_set_chats_members()
-    await client.chats.auto_set_chats_messages()
-    await client.chats.auto_set_users()
-    await client.chats.auto_set_chat_names()
 
+class AutoSetterData(QObject):
+    chats_data_ready = pyqtSignal()
+    def __init__(self):
+        super().__init__()
+
+    async def auto_set_save_data(self):
+        await client.chats.auto_set_chats_members()
+        await client.chats.auto_set_chats_messages()
+        await client.chats.auto_set_users()
+        await client.chats.auto_set_chat_names(client.settings.id)
+
+        self.chats_data_ready.emit()
 
 
 def registration_next_button_func():
@@ -61,6 +71,7 @@ def authentication_next_button_func():
     user_settings["password"] = data["password"]
     user_settings["nickname"] = ""
     client.settings.set_up_by_dict(user_settings)
+    print(f"\nuser_settings={user_settings}")
     window_manager.switch_to(window_manager.all_window["chat_window"])
 
 def create_chat_button_func():
@@ -71,6 +82,7 @@ def create_chat_button_func():
     members = list(window_manager.all_window["create_chat_dialog"].members_set)
     client.sync_server_request_create_chat(chat_name, members)
     window_manager.all_window["create_chat_dialog"].accept()
+    window_manager.all_window["create_chat_dialog"].clear_window()
     print("done")
 
 
@@ -89,8 +101,12 @@ def change_chat_func(chat_id: int):
         return
     client.chats.select_chat(chat_id)
     all_chat_messages = client.chats.chats_messages._data.get(chat_id, [])
+    print(f"_data = {client.chats.chats_messages._data}")
+    print(f"all_chat_messages: {all_chat_messages}")
     messages_str = messages_to_str_format(all_chat_messages)
+    print(f"\n!!!message_str = {messages_str}\n")
     window_manager.all_window["chat_window"].set_chat_simple_text(messages_str)
+    print(client.chats.current_chat_id)
 
 
 def add_new_chat_to_display(chat_id: int):
@@ -109,13 +125,20 @@ def add_new_chat_to_display(chat_id: int):
     window_manager.all_window["chat_window"].ui.chats_vertical_layout.addWidget(chat_button)
 
 
+def auto_set_buttons():
+    global client
+    for chat_id in client.chats.chat_names.keys():
+        add_new_chat_to_display(chat_id)
+
+
 def add_new_message_to_display(chat_id: int, message: Dict):
     if chat_id != client.chats.current_chat_id:
         return
     print(f"\nadd_new_message_to_display---:{chat_id}: {message}\n")
+    print(f"\n{client.chats.users}\n")
     user = client.chats.users[message["sender_id"]]
-    message_str = f"{user['username']}: {message['content_text']}"
-    window_manager.all_window["chat_window"].append_text_to_chat_display(message_str)
+    message_str = f"{user['username']}: {message['content_text']}\n"
+    window_manager.all_window["chat_window"].append_to_end(message_str)
 
 
 def send_button_func():
@@ -126,6 +149,8 @@ def send_button_func():
     client.sync_sending_messages_queue.put(message_request_data)
 
 
+auto_settings_data = AutoSetterData()
+auto_settings_data.chats_data_ready.connect(auto_set_buttons)
 client.chats.chats_messages.item_added.connect(add_new_message_to_display)
 client.chats.chats_members.item_added.connect(add_new_chat_to_display)
 
@@ -139,13 +164,13 @@ window_manager.all_window["chat_window"].ui.send_button.clicked.connect(send_but
 async def websocket_client():
     global client
     await create_tables()
-    uri = f"ws://127.0.0.1:8003/ws"
+    uri = f"{chat_uri}/ws"
     while client.settings.token is None:
         await asyncio.sleep(0.1)
-    await auto_set_save_data()
-    print(f"\nwebsocket_client111111111\n")
+    await auto_settings_data.auto_set_save_data()
+    print(f"\n\n\n\n!@#!@#!#!@!$!#$sjfnsjkdnfkdsjnf")
+    # input(f"DDAWEQ")
     async with websockets.connect(uri, additional_headers={"token": client.settings.token}) as websocket:
-        print(f"\nwebsocket_client22222222222\n")
         task1 = asyncio.create_task(client.receiver_handler_task(websocket))
         task2 = asyncio.create_task(client.get_message_task(websocket))
         task3 = asyncio.create_task(client.send_message_task(websocket))

@@ -2,19 +2,19 @@ from typing import List, Dict
 from .client_database import add_chat, add_connect, add_user_by_obj
 
 
-async def operation_new_chat(chat_name: str, members_id: List[int]):
-    new_chat = await add_chat(chat_name)
+async def operation_new_chat(chat_name: str, chat_id: int, members_id: List[int]):
+    new_chat = await add_chat(chat_name, chat_id)
     if new_chat is None:
         # print("create_new_chat - creating chat error")
         return None
     successful_create_members = []
     for member_id in members_id:
-        new_connection = await add_connect(member_id, new_chat.id)
+        new_connection = await add_connect(member_id, new_chat.chat_id)
         if new_connection is None:
             continue
         successful_create_members.append(new_connection.user_id)
 
-    print(f"created new chat - {new_chat.chat_name}, id={new_chat.id}")
+    print(f"created new chat - {new_chat.chat_name}, id={new_chat.chat_id}")
     return new_chat
 
 

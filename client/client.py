@@ -88,18 +88,18 @@ class Client:
             print(f"\nreceiver: {request_data}\n")
             await self.getting_messages_queue.put(request_data)
             await self.send_data(websocket, default_answer(request_data.get("time_key")))
-            await asyncio.sleep(0.1)
+            # await asyncio.sleep(0.03)
         elif request_data.get("type") == "ack":
             await self.ack_queue.put(request_data)
         elif request_data.get("type") == "operations":
             await self.getting_operation_queue.put(request_data)
             await self.send_data(websocket, default_answer(request_data.get("time_key")))
-            await asyncio.sleep(0.1)
+            # await asyncio.sleep(0.03)
         elif request_data.get("type") == "users_info":
             # print(f"\nrequest_data.get == users_info")
             await self.getting_users_info_queue.put(request_data)
             await self.send_data(websocket, default_answer(request_data.get("time_key")))
-            await asyncio.sleep(0.1)
+            # await asyncio.sleep(0.03)
         else:
             print("Неверная структура данных")
 
@@ -126,7 +126,7 @@ class Client:
             self.get_message_handler_func(data, self.chats)
             await self.async_get_message_handler_func(data, self.chats)
             # print(f"\ndata-get_message: {data}\n")
-        await asyncio.sleep(0.1)
+        # await asyncio.sleep(0.03)
 
 
     async def get_message_task(self, websocket: websockets.ClientConnection):
@@ -153,7 +153,7 @@ class Client:
         # print("Отправлено")
         response = await self.ack_queue.get()
         # print(f"Получено от сервера, ack: {response}")
-        await asyncio.sleep(0.1)
+        # await asyncio.sleep(0.03)
 
 
     async def send_message_task(self, websocket: websockets.ClientConnection):
@@ -205,7 +205,8 @@ class Client:
         try:
             operation_type = operation["operation"]
             if operation_type == "new_chat":
-                new_chat = await operation_new_chat(operation["chat_name"], operation["members"])
+                new_chat = await operation_new_chat(operation["chat_name"],
+                                                    operation["chat_id"], operation["members"])
                 if new_chat:
                     self.chats.add_chat(operation["chat_id"], operation["members"])
                     print(f"\nnew_chat:_: {operation}\n")
@@ -233,20 +234,20 @@ class Client:
         while True:
             try:
                 await self.execute_operation()
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.03)
             except Exception as e:
                 print(f"execute_operation_task - Exception: {e}")
 
 
-    async def websocket_client(self, domain = "127.0.0.1:8003"):
-        uri = f"ws://{domain}/ws"  # адрес твоего сервера
-
-        async with websockets.connect(uri, additional_headers={"token": self.settings.token}) as websocket:
-            task1 = asyncio.create_task(self.receiver_handler_task(websocket))
-            task2 = asyncio.create_task(self.get_message_task(websocket))
-            task3 = asyncio.create_task(self.send_message_task(websocket))
-            task4 = asyncio.create_task(self.execute_operation_task())
-
-            await task1
-            await task2
-            await task3
+    # async def websocket_client(self, domain = "127.0.0.1:8003"):
+    #     uri = f"ws://{domain}/ws"  # адрес твоего сервера
+    #
+    #     async with websockets.connect(uri, additional_headers={"token": self.settings.token}) as websocket:
+    #         task1 = asyncio.create_task(self.receiver_handler_task(websocket))
+    #         task2 = asyncio.create_task(self.get_message_task(websocket))
+    #         task3 = asyncio.create_task(self.send_message_task(websocket))
+    #         task4 = asyncio.create_task(self.execute_operation_task())
+    #
+    #         await task1
+    #         await task2
+    #         await task3

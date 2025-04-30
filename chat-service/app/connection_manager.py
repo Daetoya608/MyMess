@@ -82,7 +82,7 @@ class ConnectionManager:
 
     async def wait_key(self, key):
         while key not in self.ack_set:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.03)
         return True
 
 
@@ -209,8 +209,10 @@ class ConnectionManager:
                 chat_id = message["chat_id"]
                 # print(f"тип chat_id = {type(chat_id)}, chat_id = {chat_id}")
                 # print(f"сохранено {message}")
-                await store_message(chat_id, json.dumps(message))
-                await add_message_by_obj(message)
+                added_message = await add_message_by_obj(message)
+                if added_message:
+                    message["id"] = added_message.id
+                    await store_message(chat_id, json.dumps(message))
         except asyncio.TimeoutError:
             print("timeout error")
             return
@@ -306,7 +308,7 @@ class ConnectionManager:
         while self.websocket.client_state == WebSocketState.CONNECTED:
             try:
                 await self.save_all_messages_by_chunks()
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.03)
             except WebSocketDisconnect:
                 print("send_messages_task - WebSocketDisconnect")
                 await self.disconnect()
@@ -329,7 +331,7 @@ class ConnectionManager:
         while self.websocket.client_state == WebSocketState.CONNECTED:
             try:
                 await self.execute_command()
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.03)
             except WebSocketDisconnect:
                 print("execute_command_task - WebSocketDisconnect")
                 await self.disconnect()

@@ -1,17 +1,19 @@
 import requests
 from typing import Dict
 
+from .config import auth_url, user_url
+
 # DOMAIN_HTTP = "https://called-hear-cds-neighborhood.trycloudflare.com"
 # DOMAIN_HTTP = input("Введи url auth сервиса: ")
-DOMAIN_HTTP1 = "http://127.0.0.1:8001"
-DOMAIN_HTTP2 = "http://127.0.0.1:8002"
+# DOMAIN_HTTP1 = "http://127.0.0.1:8001"
+# DOMAIN_HTTP2 = "http://127.0.0.1:8002"
 
 def register(username: str, password: str, email: str, nickname: str):
     """return {
         "id": int,
         "status": bool
     }"""
-    url = f"{DOMAIN_HTTP1}/auth-service/register"  # Эндпоинт для регистрации
+    url = f"{auth_url}/auth-service/register"  # Эндпоинт для регистрации
     data = {
         "username": username,
         "password": password,
@@ -28,7 +30,7 @@ def register(username: str, password: str, email: str, nickname: str):
 
 
 def login(username: str, password: str) -> dict:
-    url = f"{DOMAIN_HTTP1}/auth-service/login"  # Эндпоинт для аутентификации
+    url = f"{auth_url}/auth-service/login"  # Эндпоинт для аутентификации
     data = {
         "username":  username,
         "password": password
@@ -44,7 +46,7 @@ def login(username: str, password: str) -> dict:
 
 
 def get_user_by_username(username: str):
-    url = f"{DOMAIN_HTTP2}/user-service/user_id/{username}"
+    url = f"{user_url}/user-service/user_id/{username}"
     response = requests.get(url)
     response_data = response.json()
     response_data["status"] = True if 200 <= response.status_code < 300 else False

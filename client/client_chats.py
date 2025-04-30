@@ -1,12 +1,9 @@
 from typing import Dict, List
 from .client_database import (get_users_by_chat_id, get_unique_chat_ids, add_chat, add_connect, get_messages_by_chat_id,
-                              get_unique_user_ids, get_user_by_user_id, User, get_unique_chats)
+                              get_unique_user_ids, get_user_by_user_id, User, get_unique_chats, get_chats_by_user_id)
 from .scripts import create_chat
 import asyncio
 from PyQt5.QtCore import QObject, pyqtSignal
-from collections import UserDict
-
-from collections.abc import MutableMapping
 
 
 class ObservableMembersDict(QObject):
@@ -83,7 +80,7 @@ class ClientChats:
         chat_ids: List[int] = await get_unique_chat_ids()
         for chat_id in chat_ids:
             messages_list = await get_messages_by_chat_id(chat_id)
-            result[chat_id] = messages_list
+            result[chat_id] = [mess.to_dict() for mess in messages_list]
         return result
 
 
@@ -102,7 +99,7 @@ class ClientChats:
         for user_id in users_ids:
             user = await get_user_by_user_id(user_id)
             result[user_id] = user.to_dict()
-        return users_ids
+        return result
 
 
     async def auto_set_users(self):
@@ -115,41 +112,41 @@ class ClientChats:
         self.users[user_info["user_id"]] = user_info
 
 
-    async def load_chats_info(self):
+    async def load_chats_info(self, user_id: int):
         result = dict()
-        all_chats = await get_unique_chats()
+        all_chats = await get_chats_by_user_id(user_id)
         for chat in all_chats:
-            result[chat.id] = chat.chat_name
+            result[chat.chat_id] = chat.chat_name
         return result
 
 
-    async def auto_set_chat_names(self):
-        self.chat_names = await self.load_chats_info()
+    async def auto_set_chat_names(self, user_id: int):
+        self.chat_names = await self.load_chats_info(user_id)
 
 
     async def get_from_users(self, user_id):
         while user_id not in self.users:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.03)
         return self.users[user_id]
 
 
     # async def load_users_info(self, ):
 
 
-    async def create_new_chat(self, chat_name: str, members_id: List[int]):
-        new_chat = await add_chat(chat_name)
-        if new_chat is None:
-            # print("create_new_chat - creating chat error")
-            return None
-        successful_create_members = []
-        for member_id in members_id:
-            new_connection = await add_connect(member_id, new_chat.id)
-            if new_connection is None:
-                continue
-            successful_create_members.append(new_connection.user_id)
-
-        self.chats_members[new_chat.id] = successful_create_members
-        return new_chat
+    # async def create_new_chat(self, chat_name: str, members_id: List[int]):
+    #     new_chat = await add_chat(chat_name)
+    #     if new_chat is None:
+    #         # print("create_new_chat - creating chat error")
+    #         return None
+    #     successful_create_members = []
+    #     for member_id in members_id:
+    #         new_connection = await add_connect(member_id, new_chat.id)
+    #         if new_connection is None:
+    #             continue
+    #         successful_create_members.append(new_connection.user_id)
+    #
+    #     self.chats_members[new_chat.id] = successful_create_members
+    #     return new_chat
 
 
     def select_chat(self, chat_id: int):

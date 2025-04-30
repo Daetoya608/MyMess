@@ -29,6 +29,7 @@ class Chat(Base):
     __tablename__ = "Chat"
 
     id = Column(Integer, primary_key=True, index=True)
+    chat_id = Column(Integer, nullable=False, unique=True)
     chat_name = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False, default=func.now())
 
@@ -41,7 +42,7 @@ class Connect(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
-    chat_id = Column(Integer, ForeignKey("Chat.id"), nullable=False)
+    chat_id = Column(Integer, ForeignKey("Chat.chat_id"), nullable=False)
 
     chat = relationship("Chat", back_populates="connects")
 
@@ -50,8 +51,9 @@ class Message(Base):
     __tablename__ = "Message"
 
     id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, nullable=False, unique=True)
     sender_id = Column(Integer, nullable=False)
-    chat_id = Column(Integer, ForeignKey("Chat.id"), nullable=False)
+    chat_id = Column(Integer, ForeignKey("Chat.chat_id"), nullable=False)
     is_read = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=func.now())
     content_text = Column(Text, nullable=False)
@@ -109,9 +111,9 @@ async def add_user_by_obj(user_info: Dict):
     return result
 
 
-async def add_chat(chat_name: str) -> Chat | None:
+async def add_chat(chat_name: str, chat_id: int) -> Chat | None:
     async with new_session() as session:
-        new_chat = Chat(chat_name=chat_name)
+        new_chat = Chat(chat_name=chat_name, chat_id=chat_id)
         session.add(new_chat)
         try:
             await session.commit()
@@ -137,9 +139,9 @@ async def add_connect(user_id: int, chat_id: int):
             return None
 
 
-async def add_message(sender_id: int, chat_id: int, content_text: str):
+async def add_message(message_id: int, sender_id: int, chat_id: int, content_text: str):
     async with new_session() as session:
-        new_message = Message(sender_id=sender_id, chat_id=chat_id, content_text=content_text)
+        new_message = Message(message_id=message_id, sender_id=sender_id, chat_id=chat_id, content_text=content_text)
         session.add(new_message)
         try:
             await session.commit()
@@ -151,9 +153,10 @@ async def add_message(sender_id: int, chat_id: int, content_text: str):
             return None
 
 
-async def add_message_by_obj(data: dict) -> Message:
+async def add_message_by_obj(data: dict) -> Message | None:
     try:
         new_message = await add_message(
+            message_id=data["id"],
             sender_id=data["sender_id"],
             chat_id=data["chat_id"],
             content_text=data["content_text"]
@@ -163,7 +166,7 @@ async def add_message_by_obj(data: dict) -> Message:
         print(f"add_message_by_obj: {e}")
         return None
 
-async def get_chats_by_user_id(user_id: int) -> list:
+async def get_connects_by_user_id(user_id: int) -> list[Connect]:
     async with new_session() as session:
         result = await session.execute(
             select(Connect).where(Connect.user_id == user_id)
@@ -215,3 +218,20 @@ async def get_unique_chats():
     async with new_session() as session:
         result = await session.execute(select(Chat))
         return list(result.scalars().all())
+
+
+async def get_chat_by_chat_id(chat_id: int):
+    async with new_session() as session:
+        result = await session.execute(
+            select(Chat).where(Chat.chat_id == chat_id)
+        )
+        return result.scalar_one_or_none()
+
+
+async def get_chats_by_user_id(user_id: int) -> List[Chat]:
+    connects_list = await get_connects_by_user_id(user_id)
+    result = []
+    for connect in connects_list:
+        chat = await get_chat_by_chat_id(connect.chat_id)
+        result.append(chat)
+    return result

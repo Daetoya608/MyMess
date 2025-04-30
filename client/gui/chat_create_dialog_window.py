@@ -4,6 +4,17 @@ from .gui_types import MemberButton
 from ..server_requests import get_user_by_username
 
 
+def clear_layout(layout):
+    while layout.count():
+        item = layout.takeAt(0)
+        widget = item.widget()
+        if widget:
+            widget.deleteLater()
+        else:
+            # Рекурсивно очищаем вложенные лэйауты
+            clear_layout(item.layout())
+
+
 class ChatCreateDialogWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -16,6 +27,11 @@ class ChatCreateDialogWindow(QtWidgets.QDialog):
 
     def cancel_button_func(self):
         self.reject()
+
+    def clear_window(self):
+        self.ui.chat_name_line.setText("")
+        self.ui.members_line.setText("")
+        clear_layout(self.ui.added_members_horizontal_layout)
 
     def get_chat_name(self):
         line = self.ui.chat_name_line.text()

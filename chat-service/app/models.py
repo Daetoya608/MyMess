@@ -86,11 +86,12 @@ async def add_message(sender_id: int, chat_id: int, content_text: str):
 
 
 async def add_message_by_obj(data: dict):
-    await add_message(
+    new_message = await add_message(
         sender_id=data["sender_id"],
         chat_id=data["chat_id"],
         content_text=data["content_text"]
     )
+    return new_message
 
 
 async def get_chats_by_user_id(user_id: int) -> list:
