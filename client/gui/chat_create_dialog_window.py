@@ -31,6 +31,7 @@ class ChatCreateDialogWindow(QtWidgets.QDialog):
     def clear_window(self):
         self.ui.chat_name_line.setText("")
         self.ui.members_line.setText("")
+        self.members_set.clear()
         clear_layout(self.ui.added_members_horizontal_layout)
 
     def get_chat_name(self):

@@ -8,6 +8,11 @@ class ChatMainWindow(QtWidgets.QWidget):
         self.ui = ChatInterface()
         self.ui.setupUi(self)
         self.ui.chat_display_text_edit.setReadOnly(True)
+        self.ui.message_plain_text.setReadOnly(True)
+
+    def prepare_message_enter(self):
+        self.ui.message_plain_text.setPlainText("")
+        self.ui.message_plain_text.setReadOnly(False)
 
     def get_search_line(self) -> str:
         line = self.ui.search_line.text()

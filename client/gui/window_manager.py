@@ -27,9 +27,9 @@ class WindowManager:
             lambda: self.switch_to(self.all_window["auth_window"])
         )
 
-        self.all_window["chat_window"].ui.new_chat_button.clicked.connect(
-            lambda: self.all_window["create_chat_dialog"].exec_()
-        )
+        # self.all_window["chat_window"].ui.new_chat_button.clicked.connect(
+        #     lambda: self.all_window["create_chat_dialog"].exec_()
+        # )
 
     def switch_to(self, new_window: QWidget):
         if self._current_window is not None:

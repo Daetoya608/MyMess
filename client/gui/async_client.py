@@ -6,7 +6,7 @@ from .window_manager import WindowManager
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from .gui_types import ChatButton
-from ..server_requests import register, login
+from ..server_requests import register, login, get_user_by_username
 import sys
 import asyncio
 import websockets
@@ -74,6 +74,25 @@ def authentication_next_button_func():
     print(f"\nuser_settings={user_settings}")
     window_manager.switch_to(window_manager.all_window["chat_window"])
 
+def add_self_user_to_chat():
+    name = client.settings.username
+    user = get_user_by_username(name)
+    print("\n\n00000\n\n")
+    if not user["status"]:
+        print(11111)
+        window_manager.all_window["create_chat_dialog"].reject()
+    if user["user_id"] in window_manager.all_window["create_chat_dialog"].members_set:
+        print(22222)
+        return
+    print(33333)
+    window_manager.all_window["create_chat_dialog"].members_set.add(user["user_id"])
+    window_manager.all_window["create_chat_dialog"].add_member_button_by_username(name)
+
+def new_chat_button_func():
+    print(f"\n\n\nNEW_CHAT_BUTTON_FUNC\n\n\n")
+    add_self_user_to_chat()
+    window_manager.all_window["create_chat_dialog"].exec_()
+
 def create_chat_button_func():
     global client
     if not window_manager.all_window["create_chat_dialog"].is_correct_input_data():
@@ -100,18 +119,19 @@ def change_chat_func(chat_id: int):
     if chat_id == client.chats.current_chat_id:
         return
     client.chats.select_chat(chat_id)
+    window_manager.all_window["chat_window"].prepare_message_enter()
     all_chat_messages = client.chats.chats_messages._data.get(chat_id, [])
-    print(f"_data = {client.chats.chats_messages._data}")
-    print(f"all_chat_messages: {all_chat_messages}")
+    # print(f"_data = {client.chats.chats_messages._data}")
+    # print(f"all_chat_messages: {all_chat_messages}")
     messages_str = messages_to_str_format(all_chat_messages)
-    print(f"\n!!!message_str = {messages_str}\n")
+    # print(f"\n!!!message_str = {messages_str}\n")
     window_manager.all_window["chat_window"].set_chat_simple_text(messages_str)
     print(client.chats.current_chat_id)
 
 
 def add_new_chat_to_display(chat_id: int):
     global window_manager
-    print(f"\nadd_new_chat_to_display --- chat_id: {chat_id}\n")
+    # print(f"\nadd_new_chat_to_display --- chat_id: {chat_id}\n")
     chat_name = client.chats.chat_names[chat_id]
     chat_button = ChatButton(chat_name, chat_id)
     chat_button.setGeometry(20, 20, 100, 30)
@@ -134,8 +154,8 @@ def auto_set_buttons():
 def add_new_message_to_display(chat_id: int, message: Dict):
     if chat_id != client.chats.current_chat_id:
         return
-    print(f"\nadd_new_message_to_display---:{chat_id}: {message}\n")
-    print(f"\n{client.chats.users}\n")
+    # print(f"\nadd_new_message_to_display---:{chat_id}: {message}\n")
+    # print(f"\n{client.chats.users}\n")
     user = client.chats.users[message["sender_id"]]
     message_str = f"{user['username']}: {message['content_text']}\n"
     window_manager.all_window["chat_window"].append_to_end(message_str)
@@ -160,6 +180,7 @@ window_manager.all_window["reg_window"].ui.next_button.clicked.connect(registrat
 window_manager.all_window["auth_window"].ui.next_button.clicked.connect(authentication_next_button_func)
 window_manager.all_window["create_chat_dialog"].ui.confirm_button.clicked.connect(create_chat_button_func)
 window_manager.all_window["chat_window"].ui.send_button.clicked.connect(send_button_func)
+window_manager.all_window["chat_window"].ui.new_chat_button.clicked.connect(new_chat_button_func)
 
 async def websocket_client():
     global client
