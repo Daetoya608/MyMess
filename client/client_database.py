@@ -6,9 +6,18 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
 from typing import Dict, List
 
+from pathlib import Path
+import appdirs
+
+appname = "MyMess"
+data_dir = Path(appdirs.user_data_dir(appname))
+data_dir.mkdir(parents=True, exist_ok=True)  # auto-create dir
+db_path = data_dir / "client.db"
+print(f"DATABASE={db_path}")
 
 # Для SQLite нужно использовать aiosqlite
-DATABASE_URL = "sqlite+aiosqlite:///./client.db"  # файл test.db в текущей директории
+# DATABASE_URL = "sqlite+aiosqlite:///./client.db"  # файл test.db в текущей директории
+DATABASE_URL = f"sqlite+aiosqlite:///{db_path.as_posix()}"
 
 Base = declarative_base()
 

@@ -1,7 +1,7 @@
 import requests
 from typing import Dict
 
-from .config import auth_url, user_url
+from client.config import auth_url, user_url
 
 # DOMAIN_HTTP = "https://called-hear-cds-neighborhood.trycloudflare.com"
 # DOMAIN_HTTP = input("Введи url auth сервиса: ")

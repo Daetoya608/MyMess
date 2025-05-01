@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets
-from .authentication_interface import AuthenticationInterface
+from client.gui.authentication_interface import AuthenticationInterface
 
 class AuthenticationWindow(QtWidgets.QWidget):
     def __init__(self, parent=None):

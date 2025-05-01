@@ -1,4 +1,4 @@
-from .chat_main_interface import ChatInterface
+from client.gui.chat_main_interface import ChatInterface
 from PyQt5 import QtWidgets, QtGui
 
 

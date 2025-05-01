@@ -1,4 +1,4 @@
-from .registration_interface import RegistrationInterface
+from client.gui.registration_interface import RegistrationInterface
 from PyQt5 import QtWidgets
 
 class RegistrationWindow(QtWidgets.QWidget):

@@ -2,7 +2,27 @@ import json
 from typing import Dict, List
 import os.path
 import time
-from .server_requests import register
+from client.server_requests import register
+import os
+import sys
+from pathlib import Path
+import appdirs
+
+APP_NAME = "MyMess"
+
+def get_appdata_dir() -> Path:
+    """Возвращает путь к директории данных приложения"""
+    data_dir = Path(appdirs.user_data_dir(APP_NAME))
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir
+
+
+def resource_path(relative_path):
+    """Возвращает корректный путь для ресурсов после сборки PyInstaller"""
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 
 def create_messages(text_message: str, chat_id: int):
     request_data = {
@@ -65,20 +85,23 @@ async def async_default_func(*args, **kwargs):
 
 
 def save_settings(settings: Dict):
-    with open("settings.json", "w", encoding="utf-8") as f:
+    settings_path = get_appdata_dir() / "settings.json"
+    with open(settings_path, "w", encoding="utf-8") as f:
         json.dump(settings, f, ensure_ascii=False, indent=4)
 
 
 def load_settings():
-    if not os.path.exists("settings.json"):
+    settings_path = get_appdata_dir() / "settings.json"
+    if not os.path.exists(settings_path):
         return None
-    with open("settings.json", "r", encoding="utf-8") as f:
+    with open(settings_path, "r", encoding="utf-8") as f:
         data = json.load(f)
         return data
 
 
 def is_reg():
-    return os.path.exists("settings.json")
+    settings_path = get_appdata_dir() / "settings.json"
+    return os.path.exists(settings_path)
 
 
 def update_settings(new_data: dict):

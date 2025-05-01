@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QWidget
-from .authentication_window import AuthenticationWindow
-from .registration_window import RegistrationWindow
-from .chat_main_window import ChatMainWindow
-from .chat_create_dialog_window import ChatCreateDialogWindow
+from client.gui.authentication_window import AuthenticationWindow
+from client.gui.registration_window import RegistrationWindow
+from client.gui.chat_main_window import ChatMainWindow
+from client.gui.chat_create_dialog_window import ChatCreateDialogWindow
 from PyQt5 import QtWidgets
 
 class WindowManager:

@@ -2,11 +2,11 @@ import asyncio
 import websockets
 import json
 from typing import List, Dict, Set
-from .scripts import create_messages, default_answer, create_chat, default_func, async_default_func, create_chat_by_usernames
-from .client_settings import ClientSettings
-from .client_chats import ClientChats
-from .client_handlers import operation_new_chat, user_info_handler
-from .client_database import add_message_by_obj
+from client.scripts import create_messages, default_answer, create_chat, default_func, async_default_func, create_chat_by_usernames
+from client.client_settings import ClientSettings
+from client.client_chats import ClientChats
+from client.client_handlers import operation_new_chat, user_info_handler
+from client.client_database import add_message_by_obj
 import queue
 
 
@@ -118,11 +118,9 @@ class Client:
         await self.send_ask(websocket, int(data_list["time_key"]))
         for data in data_list["messages"]:
             new_message = await add_message_by_obj(data)
-            print(f"\nget_message: {new_message}\ndata={data}\n")
+            # print(f"\nget_message: {new_message}\ndata={data}\n")
             if new_message:
-                print("\n1111\n")
                 self.chats.add_chat_message(new_message.chat_id, new_message.to_dict())
-                print("\n22222\n")
             self.get_message_handler_func(data, self.chats)
             await self.async_get_message_handler_func(data, self.chats)
             # print(f"\ndata-get_message: {data}\n")

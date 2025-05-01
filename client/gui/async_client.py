@@ -1,19 +1,19 @@
 from PyQt5.QtCore import QObject, pyqtSignal
-from ..client import Client
-from ..client_settings import ClientSettings
-from ..scripts import load_settings, update_settings, create_messages
-from .window_manager import WindowManager
+from client.client import Client
+from client.client_settings import ClientSettings
+from client.scripts import load_settings, update_settings, create_messages
+from client.gui.window_manager import WindowManager
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
-from .gui_types import ChatButton
-from ..server_requests import register, login, get_user_by_username
+from client.gui.gui_types import ChatButton
+from client.server_requests import register, login, get_user_by_username
 import sys
 import asyncio
 import websockets
 import threading
 from typing import List, Dict
-from ..client_database import create_tables
-from ..config import chat_uri, load_url_info
+from client.client_database import create_tables
+from client.config import chat_uri, load_url_info
 
 
 settings_data = load_settings()
@@ -77,19 +77,14 @@ def authentication_next_button_func():
 def add_self_user_to_chat():
     name = client.settings.username
     user = get_user_by_username(name)
-    print("\n\n00000\n\n")
     if not user["status"]:
-        print(11111)
         window_manager.all_window["create_chat_dialog"].reject()
     if user["user_id"] in window_manager.all_window["create_chat_dialog"].members_set:
-        print(22222)
         return
-    print(33333)
     window_manager.all_window["create_chat_dialog"].members_set.add(user["user_id"])
     window_manager.all_window["create_chat_dialog"].add_member_button_by_username(name)
 
 def new_chat_button_func():
-    print(f"\n\n\nNEW_CHAT_BUTTON_FUNC\n\n\n")
     add_self_user_to_chat()
     window_manager.all_window["create_chat_dialog"].exec_()
 
@@ -102,7 +97,6 @@ def create_chat_button_func():
     client.sync_server_request_create_chat(chat_name, members)
     window_manager.all_window["create_chat_dialog"].accept()
     window_manager.all_window["create_chat_dialog"].clear_window()
-    print("done")
 
 
 def messages_to_str_format(messages: List[Dict]):
@@ -189,7 +183,6 @@ async def websocket_client():
     while client.settings.token is None:
         await asyncio.sleep(0.1)
     await auto_settings_data.auto_set_save_data()
-    print(f"\n\n\n\n!@#!@#!#!@!$!#$sjfnsjkdnfkdsjnf")
     # input(f"DDAWEQ")
     async with websockets.connect(uri, additional_headers={"token": client.settings.token}) as websocket:
         task1 = asyncio.create_task(client.receiver_handler_task(websocket))

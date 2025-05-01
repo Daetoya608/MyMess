@@ -1,7 +1,7 @@
-from .chat_creating_default_interface import CreatingChatDialogDefault
+from client.gui.chat_creating_default_interface import CreatingChatDialogDefault
 from PyQt5 import QtWidgets
-from .gui_types import MemberButton
-from ..server_requests import get_user_by_username
+from client.gui.gui_types import MemberButton
+from client.server_requests import get_user_by_username
 
 
 def clear_layout(layout):

@@ -1,7 +1,6 @@
 from typing import Dict, List
-from .client_database import (get_users_by_chat_id, get_unique_chat_ids, add_chat, add_connect, get_messages_by_chat_id,
+from client.client_database import (get_users_by_chat_id, get_unique_chat_ids, add_chat, add_connect, get_messages_by_chat_id,
                               get_unique_user_ids, get_user_by_user_id, User, get_unique_chats, get_chats_by_user_id)
-from .scripts import create_chat
 import asyncio
 from PyQt5.QtCore import QObject, pyqtSignal
 
