@@ -1,0 +1,3 @@
+auth_url={https://bite-firmware-claimed-highest.trycloudflare.com}
+user_url={https://stereo-electoral-borough-intersection.trycloudflare.com}
+chat_url={https://bureau-experts-happens-represented.trycloudflare.com}
