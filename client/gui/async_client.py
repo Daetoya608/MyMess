@@ -161,6 +161,7 @@ def send_button_func():
     chat_id = client.chats.current_chat_id
     message_request_data = create_messages(message_line, chat_id)
     client.sync_sending_messages_queue.put(message_request_data)
+    window_manager.all_window["chat_window"].ui.message_plain_text.clear()
 
 
 auto_settings_data = AutoSetterData()
