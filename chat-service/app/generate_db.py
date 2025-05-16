@@ -264,7 +264,7 @@ def aggregate_example():
 
 if __name__ == "__main__":
     # Генерируем и вставляем данные
-    # generate_data()
+    generate_data()
 
     # Извлекаем агрегированные данные
     aggregate_example()
